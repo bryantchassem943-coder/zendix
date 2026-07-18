@@ -79,7 +79,7 @@
   .attach-preview .remove-attach { margin-left:auto; cursor:pointer; color:#94a3b8; font-size:15px; }
 
   .msg.msg-media { padding:8px 10px; }
-  .voice-bubble { display:flex; align-items:center; gap:9px; min-width:190px; max-width:100%; padding:2px 2px; }
+  .voice-bubble { display:flex; align-items:center; gap:9px; min-width:190px; padding:2px 2px; }
   .voice-play-btn { width:32px; height:32px; border-radius:50%; border:none; flex-shrink:0; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; }
   .msg.user .voice-play-btn { background:rgba(255,255,255,0.25); color:#fff; }
   .msg.assistant .voice-play-btn { background:#1d4ed8; color:#fff; }
@@ -110,7 +110,7 @@
   .wa-conv-item-time { color:#8696a0; font-size:11.5px; flex-shrink:0; margin-left:8px; }
   .wa-conv-item-preview { color:#8696a0; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
 
-  #view-conversations .conv-chat-card { background:#0b141a; border:none; padding:0; overflow:hidden; display:flex; flex-direction:column; min-height:0; }
+  #view-conversations .conv-chat-card { background:#0b141a; border:none; padding:0; overflow:hidden; }
   .wa-header { background:#202c33; padding:12px 18px; display:flex; align-items:center; gap:12px; justify-content:space-between; flex-shrink:0; }
   .wa-header-left { display:flex; align-items:center; gap:12px; min-width:0; }
   .wa-header-name { color:#e9edef; font-size:15px; font-weight:600; }
@@ -119,7 +119,7 @@
   .wa-header .icon-btn:hover { background:#374752; color:#fff; }
   .wa-header .icon-btn.paused { background:#3b1f1f; color:#f87171; }
 
-  .wa-body { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding:16px 8%; display:flex; flex-direction:column; gap:2px;
+  .wa-body { flex:1; min-height:0; overflow-y:auto; padding:16px 8%; display:flex; flex-direction:column; gap:2px;
     background-color:#0b141a;
     background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.035) 1px, transparent 0);
     background-size:26px 26px; }
@@ -148,7 +148,7 @@
   .wa-bubble .file-bubble .file-icon { width:36px; height:36px; border-radius:9px; background:rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
   .wa-bubble .file-bubble .file-name { font-size:13px; font-weight:600; word-break:break-all; color:#e9edef; }
 
-  .wa-input-row { background:#202c33; padding:10px 14px; display:flex; align-items:center; gap:8px; flex-shrink:0; overflow:hidden; }
+  .wa-input-row { background:#202c33; padding:10px 14px; display:flex; align-items:center; gap:8px; flex-shrink:0; }
   .wa-input { flex:1; background:#2a3942; border:none; border-radius:20px; padding:11px 16px; color:#e9edef; font-size:14px; outline:none; }
   .wa-input::placeholder { color:#8696a0; }
   .wa-icon-btn { width:40px; height:40px; border-radius:50%; border:none; background:transparent; color:#8696a0; display:flex; align-items:center; justify-content:center; font-size:19px; cursor:pointer; flex-shrink:0; }
@@ -229,6 +229,52 @@
   }
   @media (max-width: 480px) { .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; } .kpi-value { font-size:21px; } }
   .mobile-toggle { display:none; align-items:center; justify-content:center; width:38px; height:38px; border-radius:9px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; font-size:18px; }
+
+  /* ══════════ THEME WHATSAPP WEB — ONGLET CONVERSATIONS UNIQUEMENT ══════════ */
+  #view-conversations .conv-grid { background:#111b21; border-radius:12px; overflow:hidden; }
+  #view-conversations .conv-list-card { background:#111b21; border:none; border-right:1px solid #222d34; border-radius:0; }
+  #view-conversations #convList > div { border-bottom:1px solid #222d34 !important; transition:background .1s; }
+  #view-conversations #convList > div:hover { background:#202c33 !important; }
+  #view-conversations #convList .lead-name, #view-conversations #convList > div > div > div:first-child { color:#e9edef; }
+  #view-conversations #convList > div > div > div:last-child { color:#8696a0; }
+  #view-conversations .conv-chat-card { background:#0b141a; border:none; border-radius:0; padding:0; }
+  #view-conversations #convHeader { background:#202c33; padding:14px 18px; margin:0 !important; border-bottom:1px solid #222d34; }
+  #view-conversations #convHeader .card-title { color:#e9edef; }
+  #view-conversations #convHeader .card-sub { color:#8696a0; }
+  #view-conversations #convHeader .icon-btn { background:#2a3942; border:none; color:#aebac1; }
+  #view-conversations #convHeader .icon-btn:hover { background:#374248; color:#e9edef; }
+  #view-conversations #convHeader .icon-btn.paused { background:#5b3a3a; color:#f15c6d; }
+  #view-conversations .conv-chat-body {
+    background-color:#0b141a;
+    background-image: radial-gradient(#182229 1.4px, transparent 1.4px);
+    background-size: 26px 26px;
+    padding:18px 6% !important;
+  }
+  #view-conversations .conv-chat-body .empty-state { color:#5f7178; }
+  #view-conversations .msg { max-width:65%; box-shadow:0 1px 0.5px rgba(0,0,0,0.35); position:relative; padding-bottom:6px; }
+  #view-conversations .msg.assistant { background:#202c33; color:#e9edef; border-radius:8px; border-bottom-left-radius:2px; }
+  #view-conversations .msg.user { background:#005c4b; color:#e9edef; border-radius:8px; border-bottom-right-radius:2px; }
+  #view-conversations .msg-time { font-size:10.5px; color:#8696a0; float:right; margin:6px 0 -3px 10px; display:inline-flex; align-items:center; gap:3px; white-space:nowrap; }
+  #view-conversations .msg.user .msg-time { color:rgba(233,237,239,0.7); }
+  #view-conversations .msg.user .msg-time .ti-checks { color:#53bdeb; font-size:13px; }
+  #view-conversations #convAttachPreview .attach-preview { background:#202c33; border-color:#2a3942; color:#e9edef; }
+  #view-conversations #convAttachPreview .attach-preview i.remove-attach { color:#8696a0; }
+  #view-conversations #convReplyRow { background:#202c33; padding:10px 14px; margin:0; }
+  #view-conversations .ia-input { background:#2a3942; border:none; color:#e9edef; }
+  #view-conversations .ia-input::placeholder { color:#8696a0; }
+  #view-conversations .attach-btn { background:transparent; border:none; color:#8696a0; }
+  #view-conversations .attach-btn:hover { color:#e9edef; background:transparent; }
+  #view-conversations .attach-btn.recording { background:#2a3942; color:#f15c6d; }
+  #view-conversations .ia-send { background:#00a884; }
+  #view-conversations .ia-send:hover { background:#02876b; }
+  #view-conversations .voice-play-btn { background:rgba(255,255,255,0.15) !important; color:#e9edef !important; }
+  #view-conversations .voice-track { background:rgba(255,255,255,0.2) !important; }
+  #view-conversations .voice-progress { background:#8696a0 !important; }
+  #view-conversations .msg.user .voice-progress { background:#e9edef !important; }
+  #view-conversations .voice-time { color:rgba(233,237,239,0.75) !important; }
+  #view-conversations .file-bubble .file-icon { background:rgba(255,255,255,0.12) !important; color:#e9edef; }
+  #view-conversations .file-bubble .file-name { color:#e9edef; }
+
 </style>
 </head>
 <body>
@@ -457,7 +503,7 @@
           <div class="page-sub">Historique complet par lead</div>
         </div>
       </div>
-      <button class="btn-primary" onclick="loadConversationsList(); refreshCurrentConversation();"><i class="ti ti-refresh"></i> Actualiser</button>
+      <button class="btn-primary" onclick="loadConversationsList()"><i class="ti ti-refresh"></i> Actualiser</button>
     </div>
 
     <div class="conv-grid">
@@ -646,7 +692,7 @@
 </div>
 
 <script>
-  var ZENDIX_API_BASE = 'http://localhost:3001';
+  var ZENDIX_API_BASE = window.location.origin;
   var CLIENT_ID = 'scalmind_ia';
 
   function showView(target, el) {
@@ -659,7 +705,6 @@
       if (navEl) navEl.classList.add('active');
     }
     document.getElementById('sidebar').classList.remove('open');
-    if (target !== 'conversations') stopConvPolling();
     if (target === 'leads') loadLeads();
     if (target === 'dashboard') { loadStats(); loadActivity(); }
     if (target === 'notifications') loadNotifications();
@@ -690,48 +735,14 @@
     return '<div class="voice-bubble">' +
       '<button class="voice-play-btn" onclick="toggleVoicePlay(\'' + id + '\')"><i class="ti ti-player-play" id="icon_' + id + '"></i></button>' +
       '<div class="voice-track" onclick="seekVoice(event,\'' + id + '\')"><div class="voice-progress" id="progress_' + id + '"></div></div>' +
-      '<span class="voice-time" id="time_' + id + '">--:--</span>' +
-      '<audio id="audio_' + id + '" data-src="' + url + '" preload="none" ontimeupdate="updateVoiceProgress(\'' + id + '\')" onended="resetVoiceButton(\'' + id + '\')"></audio>' +
+      '<span class="voice-time" id="time_' + id + '">0:00</span>' +
+      '<audio id="audio_' + id + '" src="' + url + '" preload="metadata" ontimeupdate="updateVoiceProgress(\'' + id + '\')" onended="resetVoiceButton(\'' + id + '\')" onloadedmetadata="setVoiceDuration(\'' + id + '\')" ondurationchange="setVoiceDuration(\'' + id + '\')"></audio>' +
     '</div>';
-  }
-
-  function hydrateVoiceBubbles(container) {
-    if (!container) return;
-    var audios = container.querySelectorAll('audio[data-src]');
-    audios.forEach(function(audioEl) {
-      var url = audioEl.getAttribute('data-src');
-      var id = audioEl.id.replace('audio_', '');
-      var timeEl = document.getElementById('time_' + id);
-      audioEl.removeAttribute('data-src');
-      fetch(url)
-        .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.blob(); })
-        .then(function(blob) {
-          var blobUrl = URL.createObjectURL(blob);
-          audioEl.src = blobUrl;
-          audioEl.addEventListener('loadedmetadata', function() {
-            if (audioEl.duration && isFinite(audioEl.duration) && timeEl) {
-              timeEl.textContent = formatTime(audioEl.duration);
-            } else if (timeEl) {
-              timeEl.textContent = '0:00';
-            }
-          });
-        })
-        .catch(function(err) {
-          console.error('Chargement audio en blob echoue, repli en streaming direct:', err.message);
-          audioEl.preload = 'metadata';
-          audioEl.src = url;
-          audioEl.addEventListener('loadedmetadata', function() {
-            if (audioEl.duration && isFinite(audioEl.duration) && timeEl) timeEl.textContent = formatTime(audioEl.duration);
-            else if (timeEl) timeEl.textContent = '0:00';
-          });
-        });
-    });
   }
   function toggleVoicePlay(id) {
     var audio = document.getElementById('audio_' + id);
     var icon = document.getElementById('icon_' + id);
     if (!audio || !icon) return;
-    if (!audio.src) { return; } // le blob audio est encore en cours de chargement
     document.querySelectorAll('audio').forEach(function(a) {
       if (a !== audio && !a.paused) {
         a.pause();
@@ -751,6 +762,27 @@
     var pct = (audio.currentTime / audio.duration) * 100;
     if (progress) progress.style.width = pct + '%';
     if (timeEl) timeEl.textContent = formatTime(audio.currentTime);
+  }
+  function setVoiceDuration(id) {
+    var audio = document.getElementById('audio_' + id);
+    var timeEl = document.getElementById('time_' + id);
+    if (!audio || !timeEl) return;
+    if (audio.duration && isFinite(audio.duration)) {
+      timeEl.textContent = formatTime(audio.duration);
+      return;
+    }
+    // Contournement d'un bug navigateur connu : la duree de certains fichiers audio
+    // streames (ogg/opus WhatsApp) n'est detectable qu'apres avoir cherche jusqu'a la fin du flux une fois
+    if (audio.dataset.durationFixApplied) return;
+    audio.dataset.durationFixApplied = '1';
+    var previousTime = audio.currentTime;
+    audio.currentTime = 1e101;
+    var onTimeUpdate = function() {
+      audio.removeEventListener('timeupdate', onTimeUpdate);
+      audio.currentTime = previousTime || 0;
+      if (audio.duration && isFinite(audio.duration)) timeEl.textContent = formatTime(audio.duration);
+    };
+    audio.addEventListener('timeupdate', onTimeUpdate);
   }
   function resetVoiceButton(id) {
     var icon = document.getElementById('icon_' + id);
@@ -1158,37 +1190,6 @@
   var mediaRecorder = null;
   var recordedChunks = [];
   var isRecording = false;
-  var convPollInterval = null;
-  var convLastMsgCount = 0;
-
-  function stopConvPolling() {
-    if (convPollInterval) { clearInterval(convPollInterval); convPollInterval = null; }
-  }
-
-  function startConvPolling() {
-    stopConvPolling();
-    convPollInterval = setInterval(pollConvMessages, 5000);
-  }
-
-  async function pollConvMessages() {
-    if (!currentConvLead) return;
-    try {
-      var res = await fetch(ZENDIX_API_BASE + '/api/conversation/' + currentConvLead.session_id + '?clientId=' + CLIENT_ID);
-      var history = await res.json();
-      if (!history || history.length <= convLastMsgCount) return;
-
-      var chat = document.getElementById('convChat');
-      var newMessages = history.slice(convLastMsgCount);
-      var wasEmpty = chat.querySelector('.empty-state');
-      if (wasEmpty) chat.innerHTML = '';
-      newMessages.forEach(function(m) {
-        chat.insertAdjacentHTML('beforeend', renderChatMessage(m));
-      });
-      hydrateVoiceBubbles(chat);
-      chat.scrollTop = chat.scrollHeight;
-      convLastMsgCount = history.length;
-    } catch(err) { console.error('Polling conversation echoue:', err.message); }
-  }
 
   async function loadConversationsList() {
     var list = document.getElementById('convList');
@@ -1213,30 +1214,19 @@
     }
   }
 
-  function initialsForAvatar(name) {
-    if (!name) return '?';
-    var digits = name.replace(/\D/g, '');
-    if (digits.length >= 2) return digits.slice(-2);
-    return name.charAt(0).toUpperCase();
-  }
-
-  function formatMsgTime(dateStr) {
-    if (!dateStr) return '';
-    var d = new Date(dateStr);
-    if (isNaN(d.getTime())) return '';
-    var h = d.getHours(), mnt = d.getMinutes();
-    return (h < 10 ? '0' : '') + h + ':' + (mnt < 10 ? '0' : '') + mnt;
+  function formatMsgTime(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    var h = d.getHours(), mn = d.getMinutes();
+    return (h < 10 ? '0' : '') + h + ':' + (mn < 10 ? '0' : '') + mn;
   }
 
   function renderChatMessage(m) {
     var role = m.role;
-    // 'in' = message reçu du lead (gris, aligné à gauche) — 'out' = réponse de l'agent/IA (vert, aligné à droite)
-    var cls = role === 'user' ? 'in' : 'out';
+    var cls = role === 'user' ? 'assistant' : 'user';
     var mediaType = m.media_type;
     var mediaUrl = m.media_url;
     var content = m.content || '';
-    var time = formatMsgTime(m.created_at);
-    var meta = '<span class="wa-meta">' + time + (cls === 'out' ? ' <span class="wa-check">✓✓</span>' : '') + '</span>';
 
     var inner = '';
     var mediaClass = '';
@@ -1256,10 +1246,13 @@
         '<span class="file-name">' + escapeHtml(fname) + '</span>' +
       '</a>';
     } else {
-      inner = '<span class="wa-bubble-text">' + escapeHtml(content) + '</span>';
+      inner = escapeHtml(content);
     }
 
-    return '<div class="wa-bubble ' + cls + mediaClass + '">' + inner + meta + '</div>';
+    var timeStr = formatMsgTime(m.created_at);
+    var timeHtml = timeStr ? '<span class="msg-time">' + timeStr + (role === 'assistant' ? ' <i class="ti ti-checks"></i>' : '') + '</span>' : '';
+
+    return '<div class="msg ' + cls + mediaClass + '">' + inner + timeHtml + '</div>';
   }
 
   async function openConversation(idx) {
@@ -1268,13 +1261,8 @@
     currentConvLead = lead;
     clearPendingAttachment();
 
-    // FIX: on utilise les vrais IDs du header (convHeaderName / convHeaderSub / convHeaderAvatar)
-    // et on affiche le panneau (header + zone de chat) qui etait cache par defaut.
-    document.getElementById('convHeader').style.display = 'flex';
-    document.getElementById('convEmptyPlaceholder').style.display = 'none';
-    document.getElementById('convHeaderName').textContent = lead.name || 'Inconnu';
-    document.getElementById('convHeaderSub').textContent = (lead.channel || 'whatsapp').toUpperCase() + ' — ' + (lead.email || lead.session_id || '');
-    document.getElementById('convHeaderAvatar').textContent = initialsForAvatar(lead.name);
+    document.getElementById('convHeader').querySelector('.card-title').textContent = lead.name || 'Inconnu';
+    document.getElementById('convHeader').querySelector('.card-sub').textContent = (lead.channel || 'whatsapp').toUpperCase() + ' — ' + (lead.email || lead.session_id || '');
 
     var pauseBtn = document.getElementById('convPauseBtn');
     pauseBtn.style.display = 'flex';
@@ -1284,7 +1272,6 @@
     document.getElementById('convReplyRow').style.display = 'flex';
 
     var chat = document.getElementById('convChat');
-    chat.style.display = 'flex';
     chat.innerHTML = '<div class="empty-state"><i class="ti ti-loader-2"></i>Chargement de l\'historique…</div>';
 
     try {
@@ -1294,9 +1281,6 @@
 
       chat.innerHTML = history.map(function(m) { return renderChatMessage(m); }).join('');
       chat.scrollTop = chat.scrollHeight;
-      hydrateVoiceBubbles(chat);
-      convLastMsgCount = history.length;
-      startConvPolling();
     } catch(err) {
       chat.innerHTML = '<div class="empty-state"><i class="ti ti-plug-connected-x"></i>Erreur de connexion</div>';
     }
@@ -1310,8 +1294,6 @@
       var chat = document.getElementById('convChat');
       chat.innerHTML = history.length ? history.map(function(m) { return renderChatMessage(m); }).join('') : '<div class="empty-state"><i class="ti ti-message-off"></i>Aucun message</div>';
       chat.scrollTop = chat.scrollHeight;
-      hydrateVoiceBubbles(chat);
-      convLastMsgCount = history.length;
     } catch(err) { console.error('Impossible de rafraichir la conversation:', err.message); }
   }
 
