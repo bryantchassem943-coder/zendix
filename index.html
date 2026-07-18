@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZENDIX PRO — NerveCenter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+  html, body { background:#ffffff !important; color:#0f172a; }
+  body { display:flex; min-height:100vh; }
+
+  .sidebar { width:240px; background:#fff; border-right:1px solid #e5e7eb; display:flex; flex-direction:column; padding:24px 16px; position:fixed; top:0; left:0; bottom:0; z-index:100; transition:transform .2s; }
+  .logo { display:flex; align-items:center; gap:10px; padding:0 8px 28px; }
+  .logo-mark { width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,#1d4ed8,#0ea5e9); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:15px; }
+  .logo-text { font-weight:800; font-size:16px; letter-spacing:-0.02em; }
+  .nav-section { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#94a3b8; font-weight:600; margin:18px 8px 8px; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; color:#475569; font-size:14px; font-weight:500; cursor:pointer; }
+  .nav-item i { font-size:18px; }
+  .nav-item:hover { background:#f8fafc; }
+  .nav-item.active { background:#eff6ff; color:#1d4ed8; font-weight:600; }
+  .sidebar-footer { margin-top:auto; padding-top:16px; border-top:1px solid #f1f5f9; }
+
+  .main { margin-left:240px; flex:1; padding:28px 32px 40px; max-width:calc(100% - 240px); }
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+  .page-title { font-size:22px; font-weight:800; letter-spacing:-0.02em; }
+  .page-sub { font-size:13px; color:#64748b; margin-top:2px; }
+  .btn-primary { background:linear-gradient(135deg,#1d4ed8,#0ea5e9); color:#fff; border:none; padding:10px 18px; border-radius:10px; font-weight:600; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+
+  .view { display:none; }
+  .view.active { display:block; }
+
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .kpi-card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:18px 20px; }
+  .kpi-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .kpi-label { font-size:12.5px; color:#64748b; font-weight:600; }
+  .kpi-icon { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+  .kpi-value { font-size:26px; font-weight:800; letter-spacing:-0.02em; }
+  .icon-blue { background:#eff6ff; color:#1d4ed8; }
+  .icon-green { background:#ecfdf5; color:#059669; }
+  .icon-amber { background:#fffbeb; color:#d97706; }
+  .icon-violet { background:#f5f3ff; color:#7c3aed; }
+
+  .charts-row { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:24px; }
+  .card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:20px; }
+  .card-title { font-size:14.5px; font-weight:700; margin-bottom:2px; }
+  .card-sub { font-size:12px; color:#94a3b8; margin-bottom:16px; }
+  .donut-legend { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
+  .legend-row { display:flex; align-items:center; justify-content:space-between; font-size:13px; }
+  .legend-dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:8px; }
+
+  .ia-card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:20px; }
+  .ia-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+  .ia-title { display:flex; align-items:center; gap:10px; }
+  .ia-title-icon { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#1d4ed8,#0ea5e9); display:flex; align-items:center; justify-content:center; color:#fff; font-size:17px; }
+  .ia-title h3 { font-size:15px; font-weight:700; }
+  .ia-title p { font-size:12px; color:#94a3b8; }
+  .quick-qs { display:flex; gap:8px; flex-wrap:wrap; }
+  .quick-q { font-size:12px; background:#f8fafc; border:1px solid #e5e7eb; padding:6px 12px; border-radius:8px; cursor:pointer; color:#475569; }
+  .quick-q:hover { background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8; }
+  .ia-chat { min-height:160px; max-height:260px; overflow-y:auto; padding:6px 2px 12px; display:flex; flex-direction:column; gap:12px; }
+  .msg { max-width:80%; padding:10px 14px; border-radius:12px; font-size:13.5px; line-height:1.5; }
+  .msg.assistant { background:#f8fafc; color:#334155; align-self:flex-start; border-bottom-left-radius:4px; }
+  .msg.user { background:#1d4ed8; color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+  .msg img { max-width:100%; border-radius:8px; display:block; margin-top:4px; }
+  .ia-input-row { display:flex; gap:8px; margin-top:10px; align-items:center; }
+  .ia-input { flex:1; border:1px solid #e5e7eb; border-radius:12px; padding:12px 16px; font-size:13.5px; outline:none; }
+  .ia-input:focus { border-color:#93c5fd; }
+  .ia-send { background:linear-gradient(135deg,#1d4ed8,#0ea5e9); color:#fff; border:none; width:44px; height:44px; flex-shrink:0; border-radius:12px; cursor:pointer; font-size:16px; }
+  .attach-btn { width:44px; height:44px; flex-shrink:0; border-radius:12px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:18px; }
+  .attach-btn:hover { background:#f8fafc; color:#1d4ed8; }
+  .attach-btn.recording { background:#fef2f2; color:#dc2626; border-color:#fecaca; animation:pulse-rec 1s infinite; }
+  @keyframes pulse-rec { 0%,100%{ opacity:1; } 50%{ opacity:0.5; } }
+  .attach-preview { display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:10px; padding:6px 10px; font-size:12.5px; color:#475569; margin-top:8px; }
+  .attach-preview img { width:32px; height:32px; object-fit:cover; border-radius:6px; }
+  .attach-preview .remove-attach { margin-left:auto; cursor:pointer; color:#94a3b8; font-size:15px; }
+
+  .msg.msg-media { padding:8px 10px; }
+  .voice-bubble { display:flex; align-items:center; gap:9px; min-width:190px; max-width:100%; padding:2px 2px; }
+  .voice-play-btn { width:32px; height:32px; border-radius:50%; border:none; flex-shrink:0; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; }
+  .msg.user .voice-play-btn { background:rgba(255,255,255,0.25); color:#fff; }
+  .msg.assistant .voice-play-btn { background:#1d4ed8; color:#fff; }
+  .voice-track { flex:1; height:4px; background:rgba(0,0,0,0.12); border-radius:2px; position:relative; overflow:hidden; cursor:pointer; }
+  .msg.user .voice-track { background:rgba(255,255,255,0.3); }
+  .voice-progress { height:100%; width:0%; border-radius:2px; }
+  .msg.user .voice-progress { background:#fff; }
+  .msg.assistant .voice-progress { background:#1d4ed8; }
+  .voice-time { font-size:11px; flex-shrink:0; opacity:0.85; min-width:30px; }
+  .image-bubble img { max-width:230px; max-height:230px; border-radius:10px; display:block; cursor:pointer; object-fit:cover; }
+  .image-bubble .image-caption { margin-top:6px; font-size:13px; }
+  .file-bubble { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; min-width:170px; }
+  .file-bubble .file-icon { width:36px; height:36px; border-radius:9px; background:rgba(0,0,0,0.08); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .msg.user .file-bubble .file-icon { background:rgba(255,255,255,0.25); }
+  .file-bubble .file-name { font-size:13px; font-weight:600; word-break:break-all; }
+
+  /* ═══ THEME WHATSAPP WEB (vue Conversations uniquement) ═══ */
+  #view-conversations .conv-grid { background:#111b21; border-radius:16px; overflow:hidden; border:1px solid #222e35; }
+  #view-conversations .conv-list-card { background:#111b21; border:none; border-right:1px solid #222e35; }
+  .wa-conv-item { padding:12px 16px; border-bottom:1px solid #202c33; cursor:pointer; display:flex; gap:12px; align-items:center; transition:background .1s; }
+  .wa-conv-item:hover { background:#202c33; }
+  .wa-conv-item.active-conv { background:#2a3942; }
+  .wa-avatar { width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,#25d366,#128c7e); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:17px; flex-shrink:0; }
+  .wa-avatar.small { width:36px; height:36px; font-size:14px; }
+  .wa-conv-item-body { flex:1; min-width:0; }
+  .wa-conv-item-top { display:flex; justify-content:space-between; align-items:center; }
+  .wa-conv-item-name { color:#e9edef; font-size:14.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .wa-conv-item-time { color:#8696a0; font-size:11.5px; flex-shrink:0; margin-left:8px; }
+  .wa-conv-item-preview { color:#8696a0; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+
+  #view-conversations .conv-chat-card { background:#0b141a; border:none; padding:0; overflow:hidden; display:flex; flex-direction:column; min-height:0; }
+  .wa-header { background:#202c33; padding:12px 18px; display:flex; align-items:center; gap:12px; justify-content:space-between; flex-shrink:0; }
+  .wa-header-left { display:flex; align-items:center; gap:12px; min-width:0; }
+  .wa-header-name { color:#e9edef; font-size:15px; font-weight:600; }
+  .wa-header-sub { color:#8696a0; font-size:12.5px; margin-top:1px; }
+  .wa-header .icon-btn { background:#2a3942; border:none; color:#aebac1; }
+  .wa-header .icon-btn:hover { background:#374752; color:#fff; }
+  .wa-header .icon-btn.paused { background:#3b1f1f; color:#f87171; }
+
+  .wa-body { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding:16px 8%; display:flex; flex-direction:column; gap:2px;
+    background-color:#0b141a;
+    background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.035) 1px, transparent 0);
+    background-size:26px 26px; }
+  @media (max-width: 860px) { .wa-body { padding:16px 4%; } }
+
+  .wa-date-sep { align-self:center; background:#182229; color:#8696a0; font-size:12px; padding:5px 12px; border-radius:8px; margin:10px 0 14px; box-shadow:0 1px 2px rgba(0,0,0,0.3); }
+
+  .wa-bubble { max-width:68%; padding:6px 9px 8px 9px; border-radius:8px; font-size:14px; line-height:1.4; position:relative; margin-bottom:3px; word-wrap:break-word; box-shadow:0 1px 1px rgba(0,0,0,0.2); }
+  .wa-bubble.in { background:#202c33; color:#e9edef; align-self:flex-start; border-top-left-radius:0; }
+  .wa-bubble.out { background:#005c4b; color:#e9edef; align-self:flex-end; border-top-right-radius:0; }
+  .wa-bubble.msg-media { padding:6px 6px 8px 6px; }
+  .wa-bubble-text { white-space:pre-wrap; }
+  .wa-meta { display:flex; align-items:center; gap:3px; justify-content:flex-end; margin-top:2px; font-size:11px; color:rgba(233,237,239,0.6); float:right; margin-left:8px; }
+  .wa-check { font-size:15px; line-height:1; color:#8696a0; }
+
+  .wa-bubble .voice-bubble { display:flex; align-items:center; gap:9px; min-width:190px; }
+  .wa-bubble .voice-play-btn { width:32px; height:32px; border-radius:50%; border:none; flex-shrink:0; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; }
+  .wa-bubble.out .voice-play-btn { background:rgba(255,255,255,0.18); color:#fff; }
+  .wa-bubble.in .voice-play-btn { background:#00a884; color:#fff; }
+  .wa-bubble .voice-track { flex:1; height:4px; background:rgba(255,255,255,0.15); border-radius:2px; position:relative; overflow:hidden; cursor:pointer; }
+  .wa-bubble .voice-progress { height:100%; width:0%; border-radius:2px; background:#00a884; }
+  .wa-bubble .voice-time { font-size:11px; flex-shrink:0; opacity:0.75; min-width:30px; color:#e9edef; }
+  .wa-bubble .image-bubble img { max-width:230px; max-height:230px; border-radius:6px; display:block; cursor:pointer; object-fit:cover; }
+  .wa-bubble .image-bubble .image-caption { margin-top:6px; font-size:13px; color:#e9edef; }
+  .wa-bubble .file-bubble { display:flex; align-items:center; gap:10px; text-decoration:none; color:#e9edef; min-width:170px; }
+  .wa-bubble .file-bubble .file-icon { width:36px; height:36px; border-radius:9px; background:rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .wa-bubble .file-bubble .file-name { font-size:13px; font-weight:600; word-break:break-all; color:#e9edef; }
+
+  .wa-input-row { background:#202c33; padding:10px 14px; display:flex; align-items:center; gap:8px; flex-shrink:0; overflow:hidden; }
+  .wa-input { flex:1; background:#2a3942; border:none; border-radius:20px; padding:11px 16px; color:#e9edef; font-size:14px; outline:none; }
+  .wa-input::placeholder { color:#8696a0; }
+  .wa-icon-btn { width:40px; height:40px; border-radius:50%; border:none; background:transparent; color:#8696a0; display:flex; align-items:center; justify-content:center; font-size:19px; cursor:pointer; flex-shrink:0; }
+  .wa-icon-btn:hover { color:#e9edef; background:rgba(255,255,255,0.05); }
+  .wa-icon-btn.recording { color:#f87171; animation:pulse-rec 1s infinite; }
+  .wa-send-btn { width:42px; height:42px; border-radius:50%; background:#00a884; color:#fff; border:none; display:flex; align-items:center; justify-content:center; font-size:17px; cursor:pointer; flex-shrink:0; }
+  .wa-send-btn:hover { background:#06cf9c; }
+  .wa-attach-preview-wrap { background:#202c33; padding:0 14px; }
+  .wa-attach-preview-wrap .attach-preview { background:#2a3942; border:none; color:#e9edef; }
+  .wa-attach-preview-wrap .attach-preview .remove-attach { color:#aebac1; }
+
+  .filter-bar { display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; align-items:center; }
+  .search-box { position:relative; flex:1; min-width:220px; }
+  .search-box input { width:100%; padding:10px 14px 10px 38px; border:1px solid #e5e7eb; border-radius:10px; font-size:13.5px; outline:none; }
+  .search-box input:focus { border-color:#93c5fd; }
+  .search-box i { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:16px; }
+  select.filter-select { border:1px solid #e5e7eb; border-radius:10px; padding:10px 14px; font-size:13px; color:#334155; background:#fff; cursor:pointer; outline:none; }
+  .chip-row { display:flex; gap:8px; flex-wrap:wrap; }
+  .chip { font-size:12.5px; padding:7px 14px; border-radius:20px; border:1px solid #e5e7eb; cursor:pointer; color:#475569; background:#fff; font-weight:500; }
+  .chip.active { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
+
+  .table-card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  thead th { text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:#94a3b8; font-weight:600; padding:14px 18px; border-bottom:1px solid #f1f5f9; background:#fafbfc; }
+  tbody td { padding:14px 18px; font-size:13.5px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+  tbody tr:hover { background:#fafbfc; }
+  tbody tr:last-child td { border-bottom:none; }
+  .lead-name { font-weight:600; color:#0f172a; }
+  .lead-sub { font-size:12px; color:#94a3b8; margin-top:1px; }
+  .badge { font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:8px; display:inline-flex; align-items:center; gap:5px; text-transform:uppercase; letter-spacing:.02em; }
+  .badge-hot { background:#fef2f2; color:#dc2626; }
+  .badge-warm { background:#fffbeb; color:#d97706; }
+  .badge-new { background:#f1f5f9; color:#64748b; }
+  .channel-icon { width:26px; height:26px; border-radius:7px; display:inline-flex; align-items:center; justify-content:center; font-size:13px; color:#fff; }
+  .ch-whatsapp { background:#25d366; }
+  .ch-instagram { background:linear-gradient(135deg,#f58529,#dd2a7b,#8134af); }
+  .ch-messenger { background:#0084ff; }
+  .channel-icon-btn { border:none; background:none; padding:0; cursor:pointer; display:inline-flex; }
+  .score-bar-wrap { display:flex; align-items:center; gap:8px; }
+  .score-bar { width:60px; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden; }
+  .score-bar-fill { height:100%; border-radius:3px; }
+  .action-btns { display:flex; gap:6px; }
+  .icon-btn { width:32px; height:32px; border-radius:8px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:15px; }
+  .icon-btn:hover { background:#f8fafc; color:#1d4ed8; border-color:#bfdbfe; }
+  .icon-btn.paused { background:#fef2f2; color:#dc2626; border-color:#fecaca; }
+  .empty-state { text-align:center; padding:60px 20px; color:#94a3b8; }
+  .empty-state i { font-size:36px; margin-bottom:10px; display:block; }
+
+  .conv-grid { display:grid; grid-template-columns:300px 1fr; gap:16px; height:calc(100vh - 170px); min-height:420px; }
+  .conv-list-card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; overflow-y:auto; }
+  .conv-chat-card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:20px; display:flex; flex-direction:column; min-height:0; }
+  .conv-chat-body { flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:12px; padding:6px 2px 12px; }
+  @media (max-width: 860px) { .conv-grid { grid-template-columns:1fr; height:auto; } .conv-list-card { max-height:220px; } .conv-chat-card { height:60vh; } }
+
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.4); z-index:200; align-items:center; justify-content:center; padding:20px; }
+  .modal-overlay.open { display:flex; }
+  .modal-box { background:#fff; border-radius:16px; padding:24px; width:100%; max-width:460px; max-height:80vh; overflow-y:auto; }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .modal-header h3 { font-size:16px; font-weight:700; }
+  .modal-close { cursor:pointer; color:#94a3b8; font-size:18px; }
+  .modal-textarea { width:100%; min-height:100px; border:1px solid #e5e7eb; border-radius:10px; padding:12px; font-size:13.5px; font-family:inherit; outline:none; resize:vertical; }
+  .modal-summary { font-size:13.5px; line-height:1.7; color:#334155; white-space:pre-wrap; }
+
+  .image-viewer-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:300; align-items:center; justify-content:center; padding:20px; }
+  .image-viewer-overlay.open { display:flex; }
+  .image-viewer-overlay img { max-width:100%; max-height:90vh; border-radius:8px; }
+  .image-viewer-close { position:absolute; top:20px; right:24px; color:#fff; font-size:28px; cursor:pointer; }
+
+  @media (max-width: 1024px) { .charts-row { grid-template-columns:1fr; } }
+  @media (max-width: 860px) {
+    .sidebar { transform:translateX(-100%); }
+    .sidebar.open { transform:translateX(0); }
+    .main { margin-left:0; max-width:100%; padding:20px; }
+    .kpi-grid { grid-template-columns:repeat(2,1fr); }
+    .table-card { overflow-x:auto; }
+    table { min-width:720px; }
+    .mobile-toggle { display:flex !important; }
+  }
+  @media (max-width: 480px) { .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; } .kpi-value { font-size:21px; } }
+  .mobile-toggle { display:none; align-items:center; justify-content:center; width:38px; height:38px; border-radius:9px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; font-size:18px; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-mark">Z</div>
+    <div class="logo-text">ZENDIX PRO</div>
+  </div>
+  <div class="nav-section">Général</div>
+  <div class="nav-item active" data-target="dashboard" onclick="showView('dashboard', this)"><i class="ti ti-layout-dashboard"></i>Tableau de bord</div>
+  <div class="nav-item" data-target="leads" onclick="showView('leads', this)"><i class="ti ti-users"></i>Leads</div>
+  <div class="nav-item" data-target="conversations" onclick="showView('conversations', this)"><i class="ti ti-messages"></i>Conversations</div>
+  <div class="nav-section">Configuration</div>
+  <div class="nav-item" data-target="canaux" onclick="showView('canaux', this)"><i class="ti ti-plug-connected"></i>Canaux</div>
+  <div class="nav-item" data-target="notifications" onclick="showView('notifications', this)"><i class="ti ti-bell"></i>Notifications</div>
+  <div class="nav-item" data-target="analytiques" onclick="showView('analytiques', this)"><i class="ti ti-chart-bar"></i>Analytiques</div>
+  <div class="nav-section">Compte</div>
+  <div class="nav-item" data-target="parametres" onclick="showView('parametres', this)"><i class="ti ti-settings"></i>Paramètres</div>
+  <div class="nav-item" data-target="compte" onclick="showView('compte', this)"><i class="ti ti-user-circle"></i>Mon compte</div>
+  <div class="sidebar-footer">
+    <div class="nav-item"><i class="ti ti-logout"></i>Déconnexion</div>
+  </div>
+</aside>
+
+<main class="main">
+
+  <div class="view active" id="view-dashboard">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="ti ti-menu-2"></i></div>
+        <div>
+          <div class="page-title">Tableau de bord</div>
+          <div class="page-sub">Vue d'ensemble — tous canaux confondus</div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="loadStats()"><i class="ti ti-refresh"></i> Actualiser</button>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-top"><div class="kpi-label">Messages reçus</div><div class="kpi-icon icon-blue"><i class="ti ti-message-circle"></i></div></div>
+        <div class="kpi-value" id="kpiMessages">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><div class="kpi-label">Leads qualifiés</div><div class="kpi-icon icon-violet"><i class="ti ti-user-check"></i></div></div>
+        <div class="kpi-value" id="kpiLeads">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><div class="kpi-label">RDV pris</div><div class="kpi-icon icon-green"><i class="ti ti-calendar-check"></i></div></div>
+        <div class="kpi-value" id="kpiRdv">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><div class="kpi-label">Taux de conversion</div><div class="kpi-icon icon-amber"><i class="ti ti-target-arrow"></i></div></div>
+        <div class="kpi-value" id="kpiConv">—</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="card">
+        <div class="card-title">Activité — 7 derniers jours</div>
+        <div class="card-sub">Volume de messages tous canaux confondus</div>
+        <canvas id="activityChart" height="90"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-title">Statuts des leads</div>
+        <div class="card-sub">Répartition du pipeline</div>
+        <canvas id="statusDonut" height="150"></canvas>
+        <div class="donut-legend">
+          <div class="legend-row"><span><span class="legend-dot" style="background:#94a3b8"></span>Nouveau</span><strong id="legendNew">—</strong></div>
+          <div class="legend-row"><span><span class="legend-dot" style="background:#f59e0b"></span>Warm</span><strong id="legendWarm">—</strong></div>
+          <div class="legend-row"><span><span class="legend-dot" style="background:#ef4444"></span>Chaud</span><strong id="legendHot">—</strong></div>
+          <div class="legend-row"><span><span class="legend-dot" style="background:#059669"></span>Closing</span><strong id="legendClosing">—</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ia-card">
+      <div class="ia-header">
+        <div class="ia-title">
+          <div class="ia-title-icon"><i class="ti ti-sparkles"></i></div>
+          <div><h3>Assistant ZENDIX</h3><p>Posez une question sur vos données</p></div>
+        </div>
+        <div class="quick-qs">
+          <div class="quick-q">Leads chauds aujourd'hui</div>
+          <div class="quick-q">Résumé de la semaine</div>
+          <div class="quick-q">Qui rappeler ?</div>
+        </div>
+      </div>
+      <div class="ia-chat" id="iaChat">
+        <div class="msg assistant">Bonjour ! Je peux vous aider à analyser vos leads, votre activité par canal, ou vous donner un résumé rapide. Que voulez-vous savoir ?</div>
+      </div>
+      <div class="ia-input-row">
+        <input class="ia-input" id="iaInput" placeholder="Écrivez votre question…" onkeydown="if(event.key==='Enter')sendIa()">
+        <button class="ia-send" onclick="sendIa()"><i class="ti ti-send"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="view" id="view-leads">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="ti ti-menu-2"></i></div>
+        <div>
+          <div class="page-title">Leads</div>
+          <div class="page-sub" id="leadsCount">Chargement…</div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="loadLeads()"><i class="ti ti-refresh"></i> Actualiser</button>
+    </div>
+
+    <div class="filter-bar">
+      <div class="search-box">
+        <i class="ti ti-search"></i>
+        <input type="text" id="searchInput" placeholder="Rechercher un nom, email, entreprise…" oninput="applyFilters()">
+      </div>
+      <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+        <option value="">Tous les statuts</option>
+        <option value="hot">Chaud</option>
+        <option value="warm">Warm</option>
+        <option value="new">Nouveau</option>
+      </select>
+      <select class="filter-select" id="channelFilter" onchange="applyFilters()">
+        <option value="">Tous les canaux</option>
+        <option value="whatsapp">WhatsApp</option>
+        <option value="instagram">Instagram</option>
+        <option value="messenger">Messenger</option>
+      </select>
+    </div>
+
+    <div class="chip-row" style="margin-bottom:16px;">
+      <div class="chip active" data-view="active" onclick="setView('active', this)">Actifs</div>
+      <div class="chip" data-view="archived" onclick="setView('archived', this)">Archivés</div>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr><th>Lead</th><th>Canal</th><th>Statut</th><th>Score</th><th>Budget</th><th>Dernier contact</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="leadsTableBody">
+          <tr><td colspan="7" class="empty-state"><i class="ti ti-loader-2"></i>Chargement des leads…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="view" id="view-notifications">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="ti ti-menu-2"></i></div>
+        <div>
+          <div class="page-title">Notifications</div>
+          <div class="page-sub" id="notifCount">Chargement…</div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="loadNotifications()"><i class="ti ti-refresh"></i> Actualiser</button>
+    </div>
+    <div class="table-card" style="padding:6px 0;">
+      <div id="notifList"></div>
+    </div>
+  </div>
+
+  <div class="view" id="view-canaux">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="ti ti-menu-2"></i></div>
+        <div>
+          <div class="page-title">Canaux</div>
+          <div class="page-sub">Configuration de l'agent et des connexions</div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveConfig()"><i class="ti ti-device-floppy"></i> Enregistrer</button>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Agent & Agence</div>
+      <div class="card-sub">Ce que Rachel dira à vos prospects</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div><label style="font-size:12.5px;color:#64748b;font-weight:600;">Nom de l'agence</label><input class="modal-textarea" id="cfgAgencyName" style="min-height:auto;padding:10px 12px;margin-top:6px;"></div>
+        <div><label style="font-size:12.5px;color:#64748b;font-weight:600;">Nom de l'agent IA</label><input class="modal-textarea" id="cfgAgentName" style="min-height:auto;padding:10px 12px;margin-top:6px;"></div>
+      </div>
+      <label style="font-size:12.5px;color:#64748b;font-weight:600;">Description courte</label>
+      <input class="modal-textarea" id="cfgAgencyDesc" style="min-height:auto;padding:10px 12px;margin:6px 0 14px;">
+      <label style="font-size:12.5px;color:#64748b;font-weight:600;">Présentation complète (contexte pour l'IA)</label>
+      <textarea class="modal-textarea" id="cfgAgencyPresentation" style="margin-top:6px;"></textarea>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Connexions par canal</div>
+      <div class="card-sub">Identifiants Meta pour chaque canal</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div><label style="font-size:12.5px;color:#64748b;font-weight:600;">Phone Number ID (WhatsApp)</label><input class="modal-textarea" id="cfgPhoneId" style="min-height:auto;padding:10px 12px;margin-top:6px;"></div>
+        <div><label style="font-size:12.5px;color:#64748b;font-weight:600;">Token WhatsApp</label><input class="modal-textarea" id="cfgWaToken" style="min-height:auto;padding:10px 12px;margin-top:6px;"></div>
+        <div><label style="font-size:12.5px;color:#64748b;font-weight:600;">Page ID (Messenger)</label><input class="modal-textarea" id="cfgPageId" style="min-height:auto;padding:10px 12px;margin-top:6px;"></div>
+        <div><label style="font-size:12.5px;color:#64748b;font-weight:600;">Token Page (Messenger)</label><input class="modal-textarea" id="cfgPageToken" style="min-height:auto;padding:10px 12px;margin-top:6px;"></div>
+        <div><label style="font-size:12.5px;color:#64748b;font-weight:600;">Instagram Account ID</label><input class="modal-textarea" id="cfgIgId" style="min-height:auto;padding:10px 12px;margin-top:6px;"></div>
+        <div><label style="font-size:12.5px;color:#64748b;font-weight:600;">Token Instagram</label><input class="modal-textarea" id="cfgIgToken" style="min-height:auto;padding:10px 12px;margin-top:6px;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Notifications & Ton</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div><label style="font-size:12.5px;color:#64748b;font-weight:600;">Email de notification lead chaud</label><input class="modal-textarea" id="cfgNotifEmail" style="min-height:auto;padding:10px 12px;margin-top:6px;"></div>
+        <div>
+          <label style="font-size:12.5px;color:#64748b;font-weight:600;">Ton de l'agent</label>
+          <select class="filter-select" id="cfgTone" style="width:100%;margin-top:6px;">
+            <option value="professionnel">Professionnel</option>
+            <option value="amical">Amical</option>
+            <option value="dynamique">Dynamique</option>
+            <option value="luxe">Luxe</option>
+            <option value="jeune">Jeune</option>
+            <option value="expert">Expert</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="view" id="view-conversations">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="ti ti-menu-2"></i></div>
+        <div>
+          <div class="page-title">Conversations</div>
+          <div class="page-sub">Historique complet par lead</div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="loadConversationsList(); refreshCurrentConversation();"><i class="ti ti-refresh"></i> Actualiser</button>
+    </div>
+
+    <div class="conv-grid">
+      <div class="conv-list-card">
+        <div id="convList"><div class="empty-state"><i class="ti ti-loader-2"></i>Chargement…</div></div>
+      </div>
+      <div class="conv-chat-card">
+        <div class="wa-header" id="convHeader" style="display:none;">
+          <div class="wa-header-left">
+            <div class="wa-avatar" id="convHeaderAvatar">?</div>
+            <div style="min-width:0;">
+              <div class="wa-header-name" id="convHeaderName">—</div>
+              <div class="wa-header-sub" id="convHeaderSub">—</div>
+            </div>
+          </div>
+          <button class="icon-btn" id="convPauseBtn" title="Pause IA" onclick="toggleConvPause()"><i class="ti ti-player-pause"></i></button>
+        </div>
+        <div class="empty-state" id="convEmptyPlaceholder" style="margin:auto;">
+          <i class="ti ti-brand-whatsapp"></i>Sélectionnez une conversation
+        </div>
+        <div class="wa-body" id="convChat" style="display:none;"></div>
+        <div class="wa-attach-preview-wrap" id="convAttachPreviewWrap" style="display:none;">
+          <div id="convAttachPreview"></div>
+        </div>
+        <input type="file" id="convFileInput" accept="image/*,.pdf,.doc,.docx" style="display:none;" onchange="handleConvFileSelect(event)">
+        <div class="wa-input-row" id="convReplyRow" style="display:none;">
+          <button class="wa-icon-btn" title="Joindre une image ou un fichier" onclick="document.getElementById('convFileInput').click()"><i class="ti ti-paperclip"></i></button>
+          <button class="wa-icon-btn" id="convMicBtn" title="Enregistrer un vocal" onclick="toggleConvRecording()"><i class="ti ti-microphone"></i></button>
+          <input class="wa-input" id="convReplyInput" placeholder="Tapez un message" onkeydown="if(event.key==='Enter')sendConvReply()">
+          <button class="wa-send-btn" onclick="sendConvReply()"><i class="ti ti-send"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="view" id="view-analytiques">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="ti ti-menu-2"></i></div>
+        <div>
+          <div class="page-title">Analytiques</div>
+          <div class="page-sub">Performance détaillée par canal</div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="loadAnalytics()"><i class="ti ti-refresh"></i> Actualiser</button>
+    </div>
+
+    <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px;">
+      <div class="kpi-card">
+        <div class="kpi-top"><div class="kpi-label">Score moyen</div><div class="kpi-icon icon-blue"><i class="ti ti-gauge"></i></div></div>
+        <div class="kpi-value" id="anaAvgScore">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><div class="kpi-label">Total leads</div><div class="kpi-icon icon-violet"><i class="ti ti-users"></i></div></div>
+        <div class="kpi-value" id="anaTotal">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><div class="kpi-label">Taux conversion</div><div class="kpi-icon icon-green"><i class="ti ti-target-arrow"></i></div></div>
+        <div class="kpi-value" id="anaConv">—</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="card">
+        <div class="card-title">Volume par canal</div>
+        <div class="card-sub">Répartition des leads WhatsApp / Instagram / Messenger</div>
+        <canvas id="channelBarChart" height="140"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-title">Part de chaque canal</div>
+        <div class="card-sub">En pourcentage du total</div>
+        <canvas id="channelDonut" height="150"></canvas>
+        <div class="donut-legend">
+          <div class="legend-row"><span><span class="legend-dot" style="background:#25d366"></span>WhatsApp</span><strong id="legendWa">—</strong></div>
+          <div class="legend-row"><span><span class="legend-dot" style="background:#dd2a7b"></span>Instagram</span><strong id="legendIg">—</strong></div>
+          <div class="legend-row"><span><span class="legend-dot" style="background:#0084ff"></span>Messenger</span><strong id="legendFb">—</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="view" id="view-parametres">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="ti ti-menu-2"></i></div>
+        <div>
+          <div class="page-title">Paramètres</div>
+          <div class="page-sub">Réglages généraux de l'agent</div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveParams()"><i class="ti ti-device-floppy"></i> Enregistrer</button>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Seuil d'alerte lead chaud</div>
+      <div class="card-sub">Score minimum (sur 10) déclenchant un email de notification</div>
+      <input type="number" min="1" max="10" class="modal-textarea" id="paramThreshold" style="min-height:auto;padding:10px 12px;max-width:120px;" value="7">
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Instructions spéciales pour l'IA</div>
+      <div class="card-sub">Règles additionnelles que Rachel doit toujours respecter</div>
+      <textarea class="modal-textarea" id="paramInstructions" placeholder="Ex: Ne jamais donner de prix exact avant d'avoir confirmé le type de soin…"></textarea>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Notifications</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+        <div>
+          <div style="font-size:13.5px;font-weight:600;">Email pour chaque lead chaud</div>
+          <div style="font-size:12px;color:#94a3b8;">Reçevoir un email dès qu'un score dépasse le seuil</div>
+        </div>
+        <input type="checkbox" id="paramEmailAlert" checked style="width:18px;height:18px;">
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
+        <div>
+          <div style="font-size:13.5px;font-weight:600;">Rafraîchissement auto du dashboard</div>
+          <div style="font-size:12px;color:#94a3b8;">Actualiser les stats toutes les 30 secondes</div>
+        </div>
+        <input type="checkbox" id="paramAutoRefresh" checked style="width:18px;height:18px;">
+      </div>
+    </div>
+  </div>
+
+  <div class="view" id="view-compte">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="ti ti-menu-2"></i></div>
+        <div>
+          <div class="page-title">Mon compte</div>
+          <div class="page-sub">Informations de votre agence</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="max-width:520px;">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+        <div class="logo-mark" style="width:56px;height:56px;font-size:24px;border-radius:14px;" id="compteAvatar">Z</div>
+        <div>
+          <div style="font-size:17px;font-weight:800;" id="compteAgencyName">—</div>
+          <div style="font-size:13px;color:#94a3b8;" id="compteClientId">client_id: —</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+          <span style="color:#64748b;font-size:13px;">Email de notification</span>
+          <strong id="compteEmail" style="font-size:13px;">—</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+          <span style="color:#64748b;font-size:13px;">Agent IA</span>
+          <strong id="compteAgent" style="font-size:13px;">—</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+          <span style="color:#64748b;font-size:13px;">Ton configuré</span>
+          <strong id="compteTone" style="font-size:13px;">—</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;">
+          <span style="color:#64748b;font-size:13px;">Statut</span>
+          <span class="badge badge-hot" style="background:#ecfdf5;color:#059669;">Actif</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="modal-overlay" id="replyModal">
+  <div class="modal-box">
+    <div class="modal-header"><h3>Répondre manuellement</h3><i class="ti ti-x modal-close" onclick="closeModal('replyModal')"></i></div>
+    <p style="font-size:12.5px;color:#94a3b8;margin-bottom:10px;" id="replyLeadName"></p>
+    <textarea class="modal-textarea" id="replyText" placeholder="Écrivez votre réponse…"></textarea>
+    <button class="btn-primary" style="margin-top:12px;width:100%;justify-content:center;" onclick="sendManualReply()"><i class="ti ti-send"></i> Envoyer et mettre l'IA en pause</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="summaryModal">
+  <div class="modal-box">
+    <div class="modal-header"><h3>Résumé IA — Closing</h3><i class="ti ti-x modal-close" onclick="closeModal('summaryModal')"></i></div>
+    <div class="modal-summary" id="summaryContent">Génération du résumé…</div>
+  </div>
+</div>
+
+<div class="image-viewer-overlay" id="imageViewer" onclick="closeImageViewer()">
+  <i class="ti ti-x image-viewer-close"></i>
+  <img id="imageViewerImg" src="" onclick="event.stopPropagation()">
+</div>
+
+<script>
+  var ZENDIX_API_BASE = 'http://localhost:3001';
+  var CLIENT_ID = 'scalmind_ia';
+
+  function showView(target, el) {
+    document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+    document.getElementById('view-' + target).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+    if (el) el.classList.add('active');
+    else {
+      var navEl = document.querySelector('.nav-item[data-target="' + target + '"]');
+      if (navEl) navEl.classList.add('active');
+    }
+    document.getElementById('sidebar').classList.remove('open');
+    if (target !== 'conversations') stopConvPolling();
+    if (target === 'leads') loadLeads();
+    if (target === 'dashboard') { loadStats(); loadActivity(); }
+    if (target === 'notifications') loadNotifications();
+    if (target === 'canaux') loadConfig();
+    if (target === 'conversations') loadConversationsList();
+    if (target === 'analytiques') loadAnalytics();
+    if (target === 'compte') loadCompte();
+  }
+
+  function escapeHtml(s) { return (s || '').replace(/</g, '&lt;'); }
+  function formatTime(sec) {
+    sec = Math.floor(sec || 0);
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function openImageViewer(url) {
+    document.getElementById('imageViewerImg').src = url;
+    document.getElementById('imageViewer').classList.add('open');
+  }
+  function closeImageViewer() {
+    document.getElementById('imageViewer').classList.remove('open');
+    document.getElementById('imageViewerImg').src = '';
+  }
+
+  function renderVoiceBubble(url) {
+    var id = 'v' + Math.random().toString(36).slice(2, 10);
+    return '<div class="voice-bubble">' +
+      '<button class="voice-play-btn" onclick="toggleVoicePlay(\'' + id + '\')"><i class="ti ti-player-play" id="icon_' + id + '"></i></button>' +
+      '<div class="voice-track" onclick="seekVoice(event,\'' + id + '\')"><div class="voice-progress" id="progress_' + id + '"></div></div>' +
+      '<span class="voice-time" id="time_' + id + '">--:--</span>' +
+      '<audio id="audio_' + id + '" data-src="' + url + '" preload="none" ontimeupdate="updateVoiceProgress(\'' + id + '\')" onended="resetVoiceButton(\'' + id + '\')"></audio>' +
+    '</div>';
+  }
+
+  function hydrateVoiceBubbles(container) {
+    if (!container) return;
+    var audios = container.querySelectorAll('audio[data-src]');
+    audios.forEach(function(audioEl) {
+      var url = audioEl.getAttribute('data-src');
+      var id = audioEl.id.replace('audio_', '');
+      var timeEl = document.getElementById('time_' + id);
+      audioEl.removeAttribute('data-src');
+      fetch(url)
+        .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.blob(); })
+        .then(function(blob) {
+          var blobUrl = URL.createObjectURL(blob);
+          audioEl.src = blobUrl;
+          audioEl.addEventListener('loadedmetadata', function() {
+            if (audioEl.duration && isFinite(audioEl.duration) && timeEl) {
+              timeEl.textContent = formatTime(audioEl.duration);
+            } else if (timeEl) {
+              timeEl.textContent = '0:00';
+            }
+          });
+        })
+        .catch(function(err) {
+          console.error('Chargement audio en blob echoue, repli en streaming direct:', err.message);
+          audioEl.preload = 'metadata';
+          audioEl.src = url;
+          audioEl.addEventListener('loadedmetadata', function() {
+            if (audioEl.duration && isFinite(audioEl.duration) && timeEl) timeEl.textContent = formatTime(audioEl.duration);
+            else if (timeEl) timeEl.textContent = '0:00';
+          });
+        });
+    });
+  }
+  function toggleVoicePlay(id) {
+    var audio = document.getElementById('audio_' + id);
+    var icon = document.getElementById('icon_' + id);
+    if (!audio || !icon) return;
+    if (!audio.src) { return; } // le blob audio est encore en cours de chargement
+    document.querySelectorAll('audio').forEach(function(a) {
+      if (a !== audio && !a.paused) {
+        a.pause();
+        var otherId = a.id.replace('audio_', '');
+        var otherIcon = document.getElementById('icon_' + otherId);
+        if (otherIcon) otherIcon.className = 'ti ti-player-play';
+      }
+    });
+    if (audio.paused) { audio.play(); icon.className = 'ti ti-player-pause'; }
+    else { audio.pause(); icon.className = 'ti ti-player-play'; }
+  }
+  function updateVoiceProgress(id) {
+    var audio = document.getElementById('audio_' + id);
+    var progress = document.getElementById('progress_' + id);
+    var timeEl = document.getElementById('time_' + id);
+    if (!audio || !audio.duration) return;
+    var pct = (audio.currentTime / audio.duration) * 100;
+    if (progress) progress.style.width = pct + '%';
+    if (timeEl) timeEl.textContent = formatTime(audio.currentTime);
+  }
+  function resetVoiceButton(id) {
+    var icon = document.getElementById('icon_' + id);
+    var progress = document.getElementById('progress_' + id);
+    if (icon) icon.className = 'ti ti-player-play';
+    if (progress) progress.style.width = '0%';
+  }
+  function seekVoice(evt, id) {
+    var audio = document.getElementById('audio_' + id);
+    var track = evt.currentTarget;
+    if (!audio || !audio.duration) return;
+    var rect = track.getBoundingClientRect();
+    var pct = (evt.clientX - rect.left) / rect.width;
+    audio.currentTime = pct * audio.duration;
+  }
+
+  var channelBarChart = null, channelDonutChart = null;
+  async function loadAnalytics() {
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/stats?clientId=' + CLIENT_ID);
+      var s = await res.json();
+      if (!s || typeof s.total === 'undefined') return;
+
+      document.getElementById('anaAvgScore').textContent = (s.avgScore || 0) + '/10';
+      document.getElementById('anaTotal').textContent = s.total || 0;
+      document.getElementById('anaConv').textContent = (s.conversionRate || 0) + '%';
+
+      var wa = (s.byChannel && s.byChannel.whatsapp) || 0;
+      var ig = (s.byChannel && s.byChannel.instagram) || 0;
+      var fb = (s.byChannel && s.byChannel.messenger) || 0;
+      document.getElementById('legendWa').textContent = wa;
+      document.getElementById('legendIg').textContent = ig;
+      document.getElementById('legendFb').textContent = fb;
+
+      if (!channelBarChart) {
+        channelBarChart = new Chart(document.getElementById('channelBarChart'), {
+          type: 'bar',
+          data: { labels: ['WhatsApp','Instagram','Messenger'], datasets: [{ data:[wa,ig,fb], backgroundColor:['#25d366','#dd2a7b','#0084ff'], borderRadius:8, maxBarThickness:56 }] },
+          options: { responsive:true, plugins:{ legend:{ display:false } }, scales:{ x:{ grid:{ display:false } }, y:{ grid:{ color:'#f1f5f9' }, beginAtZero:true, ticks:{ precision:0 } } } }
+        });
+      } else {
+        channelBarChart.data.datasets[0].data = [wa, ig, fb];
+        channelBarChart.update();
+      }
+
+      if (!channelDonutChart) {
+        channelDonutChart = new Chart(document.getElementById('channelDonut'), {
+          type: 'doughnut',
+          data: { labels:['WhatsApp','Instagram','Messenger'], datasets:[{ data:[wa,ig,fb], backgroundColor:['#25d366','#dd2a7b','#0084ff'], borderWidth:0 }] },
+          options: { cutout:'72%', plugins:{ legend:{ display:false } } }
+        });
+      } else {
+        channelDonutChart.data.datasets[0].data = [wa, ig, fb];
+        channelDonutChart.update();
+      }
+    } catch(err) { console.error('Impossible de charger analytiques:', err.message); }
+  }
+
+  function saveParams() {
+    alert('Paramètres enregistrés localement. Pour les rendre permanents côté serveur, il faudra une route /api/params dédiée.');
+  }
+
+  async function loadCompte() {
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/config?clientId=' + CLIENT_ID);
+      var c = await res.json();
+      document.getElementById('compteAgencyName').textContent = c.agency_name || 'Non configuré';
+      document.getElementById('compteClientId').textContent = 'client_id: ' + CLIENT_ID;
+      document.getElementById('compteEmail').textContent = c.notification_email || '—';
+      document.getElementById('compteAgent').textContent = c.agent_name || 'Rachel';
+      document.getElementById('compteTone').textContent = c.tone || 'professionnel';
+      document.getElementById('compteAvatar').textContent = (c.agency_name || 'Z').charAt(0).toUpperCase();
+    } catch(err) { console.error('Impossible de charger le compte:', err.message); }
+  }
+
+  async function loadNotifications() {
+    var list = document.getElementById('notifList');
+    list.innerHTML = '<div class="empty-state"><i class="ti ti-loader-2"></i>Chargement…</div>';
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/notifications?clientId=' + CLIENT_ID);
+      var notifs = await res.json();
+      document.getElementById('notifCount').textContent = notifs.length + ' notification' + (notifs.length !== 1 ? 's' : '');
+      if (!notifs.length) { list.innerHTML = '<div class="empty-state"><i class="ti ti-bell-off"></i>Aucune notification</div>'; return; }
+
+      list.innerHTML = notifs.map(function(n) {
+        var isHot = n.type === 'hot_lead';
+        return '<div style="display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid #f1f5f9;' + (n.is_read ? 'opacity:0.55;' : '') + '">' +
+          '<div class="kpi-icon ' + (isHot ? 'icon-amber' : 'icon-blue') + '" style="flex-shrink:0;"><i class="ti ' + (isHot ? 'ti-flame' : 'ti-bell') + '"></i></div>' +
+          '<div style="flex:1;">' +
+            '<div style="font-weight:600;font-size:13.5px;">' + n.title + '</div>' +
+            '<div style="font-size:12.5px;color:#64748b;margin-top:2px;">' + n.description + '</div>' +
+            '<div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">' + timeAgo(n.created_at) + '</div>' +
+          '</div>' +
+          (!n.is_read ? '<button class="icon-btn" onclick="markNotifRead(\'' + n.id + '\', this)"><i class="ti ti-check"></i></button>' : '') +
+        '</div>';
+      }).join('');
+    } catch(err) {
+      list.innerHTML = '<div class="empty-state"><i class="ti ti-plug-connected-x"></i>Impossible de contacter ' + ZENDIX_API_BASE + '</div>';
+    }
+  }
+
+  async function markNotifRead(id, btnEl) {
+    try {
+      await fetch(ZENDIX_API_BASE + '/api/notifications/' + id + '/read', { method:'PATCH' });
+      loadNotifications();
+    } catch(err) { alert('Erreur: ' + err.message); }
+  }
+
+  async function loadConfig() {
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/config?clientId=' + CLIENT_ID);
+      var c = await res.json();
+      document.getElementById('cfgAgencyName').value = c.agency_name || '';
+      document.getElementById('cfgAgentName').value = c.agent_name || 'Rachel';
+      document.getElementById('cfgAgencyDesc').value = c.agency_desc || '';
+      document.getElementById('cfgAgencyPresentation').value = c.agency_presentation || '';
+      document.getElementById('cfgPhoneId').value = c.phone_number_id || '';
+      document.getElementById('cfgWaToken').value = c.whatsapp_token || '';
+      document.getElementById('cfgPageId').value = c.page_id || '';
+      document.getElementById('cfgPageToken').value = c.page_access_token || '';
+      document.getElementById('cfgIgId').value = c.instagram_account_id || '';
+      document.getElementById('cfgIgToken').value = c.ig_access_token || '';
+      document.getElementById('cfgNotifEmail').value = c.notification_email || '';
+      document.getElementById('cfgTone').value = c.tone || 'professionnel';
+    } catch(err) { console.error('Impossible de charger la config:', err.message); }
+  }
+
+  async function saveConfig() {
+    var payload = {
+      clientId: CLIENT_ID,
+      agencyName: document.getElementById('cfgAgencyName').value,
+      agentName: document.getElementById('cfgAgentName').value,
+      agencyDesc: document.getElementById('cfgAgencyDesc').value,
+      agencyPresentation: document.getElementById('cfgAgencyPresentation').value,
+      phoneNumberId: document.getElementById('cfgPhoneId').value,
+      whatsappToken: document.getElementById('cfgWaToken').value,
+      pageId: document.getElementById('cfgPageId').value,
+      pageAccessToken: document.getElementById('cfgPageToken').value,
+      instagramAccountId: document.getElementById('cfgIgId').value,
+      igAccessToken: document.getElementById('cfgIgToken').value,
+      notificationEmail: document.getElementById('cfgNotifEmail').value,
+      tone: document.getElementById('cfgTone').value
+    };
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/config', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      var data = await res.json();
+      if (data.success) alert('Configuration enregistrée.');
+      else alert('Erreur: ' + (data.error || 'inconnue'));
+    } catch(err) { alert('Erreur enregistrement: ' + err.message); }
+  }
+
+  var activityChart = new Chart(document.getElementById('activityChart'), {
+    type: 'line',
+    data: { labels: ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'], datasets: [{ label:'Messages', data:[0,0,0,0,0,0,0], borderColor:'#1d4ed8', backgroundColor:'rgba(29,78,216,0.08)', fill:true, tension:0.35, pointRadius:0, borderWidth:2.5 }] },
+    options: { responsive:true, plugins:{ legend:{ display:false } }, scales:{ x:{ grid:{ display:false } }, y:{ grid:{ color:'#f1f5f9' }, beginAtZero:true, ticks:{ precision:0, stepSize:1 }, suggestedMax:5 } } }
+  });
+
+  async function loadActivity() {
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/activity?clientId=' + CLIENT_ID);
+      var d = await res.json();
+      if (!d.days || !d.days.length) return;
+      var labels = d.days.map(function(dateStr) {
+        var dt = new Date(dateStr + 'T00:00:00');
+        return ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'][dt.getDay()];
+      });
+      activityChart.data.labels = labels;
+      activityChart.data.datasets[0].data = d.counts;
+      var maxVal = Math.max.apply(null, d.counts);
+      activityChart.options.scales.y.suggestedMax = maxVal > 0 ? undefined : 5;
+      activityChart.update();
+    } catch(err) { console.error('Impossible de charger /api/activity:', err.message); }
+  }
+
+  var statusDonutChart = new Chart(document.getElementById('statusDonut'), {
+    type: 'doughnut',
+    data: { labels:['Nouveau','Warm','Chaud','Closing'], datasets:[{ data:[0,0,0,0], backgroundColor:['#94a3b8','#f59e0b','#ef4444','#059669'], borderWidth:0 }] },
+    options: { cutout:'72%', plugins:{ legend:{ display:false } } }
+  });
+
+  async function loadStats() {
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/stats?clientId=' + CLIENT_ID);
+      var s = await res.json();
+      if (!s || typeof s.total === 'undefined') return;
+
+      document.getElementById('kpiMessages').textContent = (s.messagesReceived || 0).toLocaleString('fr-FR');
+      document.getElementById('kpiLeads').textContent = (s.total || 0).toLocaleString('fr-FR');
+      document.getElementById('kpiRdv').textContent = (s.demoScheduled || 0).toLocaleString('fr-FR');
+      document.getElementById('kpiConv').textContent = (s.conversionRate || 0) + '%';
+
+      var newCount = s.new || 0, warm = s.warm || 0, hot = s.hot || 0, closing = s.closing || 0;
+      document.getElementById('legendNew').textContent = newCount;
+      document.getElementById('legendWarm').textContent = warm;
+      document.getElementById('legendHot').textContent = hot;
+      document.getElementById('legendClosing').textContent = closing;
+
+      statusDonutChart.data.datasets[0].data = [newCount, warm, hot, closing];
+      statusDonutChart.update();
+    } catch (err) { console.error('Impossible de charger /api/stats:', err.message); }
+  }
+
+  function addTypingIndicator() {
+    var chat = document.getElementById('iaChat');
+    var typing = document.createElement('div');
+    typing.className = 'msg assistant';
+    typing.id = 'iaTyping';
+    typing.textContent = '…';
+    chat.appendChild(typing);
+    chat.scrollTop = chat.scrollHeight;
+  }
+  function removeTypingIndicator() {
+    var typing = document.getElementById('iaTyping');
+    if (typing) typing.remove();
+  }
+  async function sendIa() {
+    var input = document.getElementById('iaInput');
+    var text = input.value.trim();
+    if (!text) return;
+    var chat = document.getElementById('iaChat');
+    var userMsg = document.createElement('div');
+    userMsg.className = 'msg user';
+    userMsg.textContent = text;
+    chat.appendChild(userMsg);
+    input.value = '';
+    chat.scrollTop = chat.scrollHeight;
+    addTypingIndicator();
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/assistant/' + CLIENT_ID, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: text })
+      });
+      var data = await res.json();
+      removeTypingIndicator();
+      var reply = document.createElement('div');
+      reply.className = 'msg assistant';
+      reply.textContent = data.reply || 'Pas de réponse.';
+      chat.appendChild(reply);
+      chat.scrollTop = chat.scrollHeight;
+    } catch (err) {
+      removeTypingIndicator();
+      var errMsg = document.createElement('div');
+      errMsg.className = 'msg assistant';
+      errMsg.textContent = 'Impossible de contacter le serveur ZENDIX sur ' + ZENDIX_API_BASE + '.';
+      chat.appendChild(errMsg);
+      chat.scrollTop = chat.scrollHeight;
+    }
+  }
+  document.querySelectorAll('.quick-q').forEach(function(q) {
+    q.addEventListener('click', function() { document.getElementById('iaInput').value = q.textContent; sendIa(); });
+  });
+
+  var currentLeadsView = 'active';
+  var allLeads = [];
+  var activeLeadForReply = null;
+
+  function setView(view, el) {
+    currentLeadsView = view;
+    document.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+    el.classList.add('active');
+    loadLeads();
+  }
+
+  async function loadLeads() {
+    var tbody = document.getElementById('leadsTableBody');
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="ti ti-loader-2"></i>Chargement des leads…</td></tr>';
+    try {
+      var url = currentLeadsView === 'archived'
+        ? ZENDIX_API_BASE + '/api/leads/archived?clientId=' + CLIENT_ID
+        : ZENDIX_API_BASE + '/api/leads?clientId=' + CLIENT_ID;
+      var res = await fetch(url);
+      allLeads = await res.json();
+      document.getElementById('leadsCount').textContent = allLeads.length + ' lead' + (allLeads.length !== 1 ? 's' : '') + (currentLeadsView === 'archived' ? ' archivé(s)' : ' actif(s)');
+      applyFilters();
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="ti ti-plug-connected-x"></i>Impossible de contacter ' + ZENDIX_API_BASE + '</td></tr>';
+    }
+  }
+
+  function applyFilters() {
+    var search = document.getElementById('searchInput').value.toLowerCase();
+    var status = document.getElementById('statusFilter').value;
+    var channel = document.getElementById('channelFilter').value;
+    var filtered = allLeads.filter(function(l) {
+      var matchSearch = !search || (l.name && l.name.toLowerCase().includes(search)) || (l.email && l.email.toLowerCase().includes(search)) || (l.company && l.company.toLowerCase().includes(search));
+      var matchStatus = !status || l.status === status;
+      var matchChannel = !channel || l.channel === channel || (!l.channel && channel === 'whatsapp');
+      return matchSearch && matchStatus && matchChannel;
+    });
+    renderTable(filtered);
+  }
+
+  function channelIcon(channel) {
+    if (channel === 'instagram') return '<span class="channel-icon ch-instagram"><i class="ti ti-brand-instagram"></i></span>';
+    if (channel === 'messenger') return '<span class="channel-icon ch-messenger"><i class="ti ti-brand-messenger"></i></span>';
+    return '<span class="channel-icon ch-whatsapp"><i class="ti ti-brand-whatsapp"></i></span>';
+  }
+  function statusBadge(status) {
+    if (status === 'hot') return '<span class="badge badge-hot"><i class="ti ti-flame"></i>Chaud</span>';
+    if (status === 'warm') return '<span class="badge badge-warm">Warm</span>';
+    return '<span class="badge badge-new">Nouveau</span>';
+  }
+  function scoreBar(score) {
+    score = score || 0;
+    var color = score >= 8 ? '#dc2626' : score >= 5 ? '#d97706' : '#94a3b8';
+    return '<div class="score-bar-wrap"><div class="score-bar"><div class="score-bar-fill" style="width:' + (score*10) + '%;background:' + color + ';"></div></div><span style="font-size:12px;color:#64748b;">' + score + '/10</span></div>';
+  }
+  function timeAgo(dateStr) {
+    if (!dateStr) return '—';
+    var diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+    if (diff < 3600) return Math.floor(diff/60) + ' min';
+    if (diff < 86400) return Math.floor(diff/3600) + ' h';
+    return Math.floor(diff/86400) + ' j';
+  }
+
+  function goToConversation(lead) {
+    showView('conversations', null);
+    loadConversationsList().then(function() {
+      var idx = convLeadsCache.findIndex(function(l){ return l.id === lead.id; });
+      if (idx !== -1) openConversation(idx);
+    });
+  }
+
+  function renderTable(leads) {
+    var tbody = document.getElementById('leadsTableBody');
+    if (!leads.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="ti ti-inbox"></i>Aucun lead trouvé</td></tr>';
+      return;
+    }
+    tbody.innerHTML = leads.map(function(l) {
+      var pauseIcon = l.ia_paused ? 'ti-player-play' : 'ti-player-pause';
+      var pauseClass = l.ia_paused ? 'icon-btn paused' : 'icon-btn';
+      return '<tr>' +
+        '<td><div class="lead-name">' + (l.name || 'Inconnu') + '</div><div class="lead-sub">' + (l.email || l.company || l.session_id || '') + '</div></td>' +
+        '<td><button class="channel-icon-btn" title="Ouvrir la conversation" onclick=\'goToConversation(' + JSON.stringify(l).replace(/'/g,"&#39;") + ')\'>' + channelIcon(l.channel) + '</button></td>' +
+        '<td>' + statusBadge(l.status) + '</td>' +
+        '<td>' + scoreBar(l.score) + '</td>' +
+        '<td>' + (l.budget || '—') + '</td>' +
+        '<td>' + timeAgo(l.updated_at || l.created_at) + '</td>' +
+        '<td><div class="action-btns">' +
+          '<button class="icon-btn" title="Répondre" onclick=\'openReply(' + JSON.stringify(l).replace(/'/g,"&#39;") + ')\'><i class="ti ti-message-2"></i></button>' +
+          '<button class="icon-btn" title="Résumé IA" onclick="openSummary(\'' + l.session_id + '\')"><i class="ti ti-sparkles"></i></button>' +
+          '<button class="' + pauseClass + '" title="Pause IA" onclick="togglePause(\'' + l.id + '\', this)"><i class="ti ' + pauseIcon + '"></i></button>' +
+          '<button class="icon-btn" title="' + (currentLeadsView === 'archived' ? 'Désarchiver' : 'Archiver') + '" onclick="toggleArchive(\'' + l.id + '\', \'' + currentLeadsView + '\')"><i class="ti ti-archive"></i></button>' +
+        '</div></td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  async function togglePause(id, btnEl) {
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/lead/' + id + '/pause', { method:'PATCH' });
+      var data = await res.json();
+      if (data.success) {
+        btnEl.classList.toggle('paused');
+        btnEl.innerHTML = data.ia_paused ? '<i class="ti ti-player-play"></i>' : '<i class="ti ti-player-pause"></i>';
+      }
+    } catch(err) { alert('Erreur pause IA: ' + err.message); }
+  }
+
+  async function toggleArchive(id, view) {
+    try {
+      var endpoint = view === 'archived' ? '/api/lead/' + id + '/unarchive' : '/api/lead/' + id + '/archive';
+      await fetch(ZENDIX_API_BASE + endpoint, { method:'PATCH' });
+      loadLeads();
+    } catch(err) { alert('Erreur archivage: ' + err.message); }
+  }
+
+  function openReply(lead) {
+    activeLeadForReply = lead;
+    document.getElementById('replyLeadName').textContent = (lead.name || 'Inconnu') + ' — ' + (lead.channel || 'whatsapp').toUpperCase();
+    document.getElementById('replyText').value = '';
+    document.getElementById('replyModal').classList.add('open');
+  }
+
+  async function sendManualReply() {
+    var text = document.getElementById('replyText').value.trim();
+    if (!text || !activeLeadForReply) return;
+    try {
+      await fetch(ZENDIX_API_BASE + '/api/lead/' + activeLeadForReply.session_id + '/reply', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: CLIENT_ID, channel: activeLeadForReply.channel || 'whatsapp', text: text })
+      });
+      closeModal('replyModal');
+      loadLeads();
+    } catch(err) { alert('Erreur envoi: ' + err.message); }
+  }
+
+  async function openSummary(sessionId) {
+    document.getElementById('summaryContent').textContent = 'Génération du résumé…';
+    document.getElementById('summaryModal').classList.add('open');
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/lead/' + sessionId + '/summary?clientId=' + CLIENT_ID);
+      var data = await res.json();
+      document.getElementById('summaryContent').textContent = data.summary || 'Aucun résumé disponible.';
+    } catch(err) { document.getElementById('summaryContent').textContent = 'Erreur: ' + err.message; }
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  var convLeadsCache = [];
+  var currentConvLead = null;
+  var pendingAttachment = null;
+  var mediaRecorder = null;
+  var recordedChunks = [];
+  var isRecording = false;
+  var convPollInterval = null;
+  var convLastMsgCount = 0;
+
+  function stopConvPolling() {
+    if (convPollInterval) { clearInterval(convPollInterval); convPollInterval = null; }
+  }
+
+  function startConvPolling() {
+    stopConvPolling();
+    convPollInterval = setInterval(pollConvMessages, 5000);
+  }
+
+  async function pollConvMessages() {
+    if (!currentConvLead) return;
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/conversation/' + currentConvLead.session_id + '?clientId=' + CLIENT_ID);
+      var history = await res.json();
+      if (!history || history.length <= convLastMsgCount) return;
+
+      var chat = document.getElementById('convChat');
+      var newMessages = history.slice(convLastMsgCount);
+      var wasEmpty = chat.querySelector('.empty-state');
+      if (wasEmpty) chat.innerHTML = '';
+      newMessages.forEach(function(m) {
+        chat.insertAdjacentHTML('beforeend', renderChatMessage(m));
+      });
+      hydrateVoiceBubbles(chat);
+      chat.scrollTop = chat.scrollHeight;
+      convLastMsgCount = history.length;
+    } catch(err) { console.error('Polling conversation echoue:', err.message); }
+  }
+
+  async function loadConversationsList() {
+    var list = document.getElementById('convList');
+    list.innerHTML = '<div class="empty-state"><i class="ti ti-loader-2"></i>Chargement…</div>';
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/leads?clientId=' + CLIENT_ID);
+      convLeadsCache = await res.json();
+      if (!convLeadsCache.length) { list.innerHTML = '<div class="empty-state"><i class="ti ti-inbox"></i>Aucune conversation</div>'; return; }
+
+      list.innerHTML = convLeadsCache.map(function(l, idx) {
+        return '<div onclick="openConversation(' + idx + ')" style="padding:14px 18px;border-bottom:1px solid #f1f5f9;cursor:pointer;display:flex;gap:10px;align-items:center;" onmouseover="this.style.background=\'#fafbfc\'" onmouseout="this.style.background=\'\'">' +
+          channelIcon(l.channel) +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (l.name || 'Inconnu') + '</div>' +
+            '<div style="font-size:11.5px;color:#94a3b8;">' + timeAgo(l.updated_at || l.created_at) + '</div>' +
+          '</div>' +
+          statusBadge(l.status) +
+        '</div>';
+      }).join('');
+    } catch(err) {
+      list.innerHTML = '<div class="empty-state"><i class="ti ti-plug-connected-x"></i>Erreur de connexion</div>';
+    }
+  }
+
+  function initialsForAvatar(name) {
+    if (!name) return '?';
+    var digits = name.replace(/\D/g, '');
+    if (digits.length >= 2) return digits.slice(-2);
+    return name.charAt(0).toUpperCase();
+  }
+
+  function formatMsgTime(dateStr) {
+    if (!dateStr) return '';
+    var d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    var h = d.getHours(), mnt = d.getMinutes();
+    return (h < 10 ? '0' : '') + h + ':' + (mnt < 10 ? '0' : '') + mnt;
+  }
+
+  function renderChatMessage(m) {
+    var role = m.role;
+    // 'in' = message reçu du lead (gris, aligné à gauche) — 'out' = réponse de l'agent/IA (vert, aligné à droite)
+    var cls = role === 'user' ? 'in' : 'out';
+    var mediaType = m.media_type;
+    var mediaUrl = m.media_url;
+    var content = m.content || '';
+    var time = formatMsgTime(m.created_at);
+    var meta = '<span class="wa-meta">' + time + (cls === 'out' ? ' <span class="wa-check">✓✓</span>' : '') + '</span>';
+
+    var inner = '';
+    var mediaClass = '';
+
+    if (mediaType === 'audio' && mediaUrl) {
+      mediaClass = ' msg-media';
+      inner = renderVoiceBubble(mediaUrl);
+    } else if (mediaType === 'image' && mediaUrl) {
+      mediaClass = ' msg-media';
+      var caption = (content && content !== '[Image envoyée]' && content !== '[Image reçue]') ? '<div class="image-caption">' + escapeHtml(content) + '</div>' : '';
+      inner = '<div class="image-bubble"><img src="' + mediaUrl + '" onclick="openImageViewer(\'' + mediaUrl + '\')">' + caption + '</div>';
+    } else if (mediaType === 'file' && mediaUrl) {
+      mediaClass = ' msg-media';
+      var fname = content.replace('[Fichier] ', '').replace('[Fichier reçu] ', '') || 'Fichier';
+      inner = '<a class="file-bubble" href="' + mediaUrl + '" target="_blank">' +
+        '<span class="file-icon"><i class="ti ti-file-text"></i></span>' +
+        '<span class="file-name">' + escapeHtml(fname) + '</span>' +
+      '</a>';
+    } else {
+      inner = '<span class="wa-bubble-text">' + escapeHtml(content) + '</span>';
+    }
+
+    return '<div class="wa-bubble ' + cls + mediaClass + '">' + inner + meta + '</div>';
+  }
+
+  async function openConversation(idx) {
+    var lead = convLeadsCache[idx];
+    if (!lead) return;
+    currentConvLead = lead;
+    clearPendingAttachment();
+
+    // FIX: on utilise les vrais IDs du header (convHeaderName / convHeaderSub / convHeaderAvatar)
+    // et on affiche le panneau (header + zone de chat) qui etait cache par defaut.
+    document.getElementById('convHeader').style.display = 'flex';
+    document.getElementById('convEmptyPlaceholder').style.display = 'none';
+    document.getElementById('convHeaderName').textContent = lead.name || 'Inconnu';
+    document.getElementById('convHeaderSub').textContent = (lead.channel || 'whatsapp').toUpperCase() + ' — ' + (lead.email || lead.session_id || '');
+    document.getElementById('convHeaderAvatar').textContent = initialsForAvatar(lead.name);
+
+    var pauseBtn = document.getElementById('convPauseBtn');
+    pauseBtn.style.display = 'flex';
+    pauseBtn.classList.toggle('paused', !!lead.ia_paused);
+    pauseBtn.innerHTML = lead.ia_paused ? '<i class="ti ti-player-play"></i>' : '<i class="ti ti-player-pause"></i>';
+
+    document.getElementById('convReplyRow').style.display = 'flex';
+
+    var chat = document.getElementById('convChat');
+    chat.style.display = 'flex';
+    chat.innerHTML = '<div class="empty-state"><i class="ti ti-loader-2"></i>Chargement de l\'historique…</div>';
+
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/conversation/' + lead.session_id + '?clientId=' + CLIENT_ID);
+      var history = await res.json();
+      if (!history.length) { chat.innerHTML = '<div class="empty-state"><i class="ti ti-message-off"></i>Aucun message</div>'; return; }
+
+      chat.innerHTML = history.map(function(m) { return renderChatMessage(m); }).join('');
+      chat.scrollTop = chat.scrollHeight;
+      hydrateVoiceBubbles(chat);
+      convLastMsgCount = history.length;
+      startConvPolling();
+    } catch(err) {
+      chat.innerHTML = '<div class="empty-state"><i class="ti ti-plug-connected-x"></i>Erreur de connexion</div>';
+    }
+  }
+
+  async function refreshCurrentConversation() {
+    if (!currentConvLead) return;
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/conversation/' + currentConvLead.session_id + '?clientId=' + CLIENT_ID);
+      var history = await res.json();
+      var chat = document.getElementById('convChat');
+      chat.innerHTML = history.length ? history.map(function(m) { return renderChatMessage(m); }).join('') : '<div class="empty-state"><i class="ti ti-message-off"></i>Aucun message</div>';
+      chat.scrollTop = chat.scrollHeight;
+      hydrateVoiceBubbles(chat);
+      convLastMsgCount = history.length;
+    } catch(err) { console.error('Impossible de rafraichir la conversation:', err.message); }
+  }
+
+  async function toggleConvPause() {
+    if (!currentConvLead) return;
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/lead/' + currentConvLead.id + '/pause', { method:'PATCH' });
+      var data = await res.json();
+      if (data.success) {
+        currentConvLead.ia_paused = data.ia_paused;
+        var btn = document.getElementById('convPauseBtn');
+        btn.classList.toggle('paused', data.ia_paused);
+        btn.innerHTML = data.ia_paused ? '<i class="ti ti-player-play"></i>' : '<i class="ti ti-player-pause"></i>';
+      }
+    } catch(err) { alert('Erreur pause IA: ' + err.message); }
+  }
+
+  function handleConvFileSelect(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function() {
+      var base64 = reader.result.split(',')[1];
+      var isImage = file.type.startsWith('image/');
+      pendingAttachment = { kind: isImage ? 'image' : 'file', base64: base64, mime: file.type || 'application/octet-stream', name: file.name };
+      renderAttachPreview();
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  }
+
+  function renderAttachPreview() {
+    var box = document.getElementById('convAttachPreview');
+    if (!pendingAttachment) { box.innerHTML = ''; return; }
+    if (pendingAttachment.kind === 'image') {
+      box.innerHTML = '<div class="attach-preview"><img src="data:' + pendingAttachment.mime + ';base64,' + pendingAttachment.base64 + '"><span>' + pendingAttachment.name + '</span><i class="ti ti-x remove-attach" onclick="clearPendingAttachment()"></i></div>';
+    } else if (pendingAttachment.kind === 'file') {
+      box.innerHTML = '<div class="attach-preview"><i class="ti ti-file"></i><span>' + pendingAttachment.name + '</span><i class="ti ti-x remove-attach" onclick="clearPendingAttachment()"></i></div>';
+    } else if (pendingAttachment.kind === 'audio') {
+      box.innerHTML = '<div class="attach-preview"><i class="ti ti-microphone"></i><span>Vocal enregistré — prêt à envoyer</span><i class="ti ti-x remove-attach" onclick="clearPendingAttachment()"></i></div>';
+    }
+  }
+
+  function clearPendingAttachment() {
+    pendingAttachment = null;
+    renderAttachPreview();
+  }
+
+  async function toggleConvRecording() {
+    if (isRecording) {
+      mediaRecorder.stop();
+      return;
+    }
+    try {
+      var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordedChunks = [];
+      var preferredMimes = ['audio/mp4', 'audio/aac', 'audio/ogg;codecs=opus', 'audio/webm'];
+      var chosenMime = '';
+      for (var i = 0; i < preferredMimes.length; i++) {
+        if (MediaRecorder.isTypeSupported(preferredMimes[i])) { chosenMime = preferredMimes[i]; break; }
+      }
+      mediaRecorder = chosenMime ? new MediaRecorder(stream, { mimeType: chosenMime }) : new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = function() {
+        stream.getTracks().forEach(function(t){ t.stop(); });
+        var blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+        var reader = new FileReader();
+        reader.onload = function() {
+          var base64 = reader.result.split(',')[1];
+          pendingAttachment = { kind: 'audio', base64: base64, mime: blob.type };
+          renderAttachPreview();
+        };
+        reader.readAsDataURL(blob);
+        isRecording = false;
+        document.getElementById('convMicBtn').classList.remove('recording');
+      };
+      mediaRecorder.start();
+      isRecording = true;
+      document.getElementById('convMicBtn').classList.add('recording');
+    } catch(err) {
+      alert('Impossible d\'accéder au micro : ' + err.message);
+    }
+  }
+
+  async function sendConvReply() {
+    var input = document.getElementById('convReplyInput');
+    var text = input.value.trim();
+    if (!text && !pendingAttachment) return;
+    if (!currentConvLead) return;
+
+    var payload = { clientId: CLIENT_ID, channel: currentConvLead.channel || 'whatsapp', text: text };
+    if (pendingAttachment) {
+      if (pendingAttachment.kind === 'image') { payload.image = pendingAttachment.base64; payload.imageMime = pendingAttachment.mime; }
+      else if (pendingAttachment.kind === 'file') { payload.file = pendingAttachment.base64; payload.fileMime = pendingAttachment.mime; payload.fileName = pendingAttachment.name; }
+      else if (pendingAttachment.kind === 'audio') { payload.audio = pendingAttachment.base64; payload.audioMime = pendingAttachment.mime; }
+    }
+
+    var chat = document.getElementById('convChat');
+    var sendingLabel = pendingAttachment
+      ? (pendingAttachment.kind === 'audio' ? 'Envoi du vocal…' : pendingAttachment.kind === 'image' ? 'Envoi de l\'image…' : 'Envoi du fichier…')
+      : null;
+    if (sendingLabel) {
+      chat.insertAdjacentHTML('beforeend', '<div class="msg user" style="opacity:0.55;">' + sendingLabel + '</div>');
+    } else {
+      chat.insertAdjacentHTML('beforeend', renderChatMessage({ role: 'assistant', content: text }));
+    }
+    chat.scrollTop = chat.scrollHeight;
+
+    input.value = '';
+    clearPendingAttachment();
+
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/lead/' + currentConvLead.session_id + '/reply', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json();
+      if (data.success) {
+        currentConvLead.ia_paused = true;
+        var pauseBtn = document.getElementById('convPauseBtn');
+        pauseBtn.classList.add('paused');
+        pauseBtn.innerHTML = '<i class="ti ti-player-play"></i>';
+      }
+      await refreshCurrentConversation();
+    } catch(err) {
+      alert('Erreur envoi: ' + err.message);
+    }
+  }
+
+  loadStats();
+  loadActivity();
+  setInterval(loadStats, 30000);
+</script>
+
+</body>
+</html>

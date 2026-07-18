@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZENDIX PRO — Leads</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+  html, body { background:#ffffff !important; color:#0f172a; }
+  body { display:flex; min-height:100vh; }
+
+  .sidebar {
+    width:240px; background:#ffffff; border-right:1px solid #e5e7eb;
+    display:flex; flex-direction:column; padding:24px 16px; position:fixed;
+    top:0; left:0; bottom:0; z-index:100; transition:transform .2s;
+  }
+  .logo { display:flex; align-items:center; gap:10px; padding:0 8px 28px; }
+  .logo-mark { width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,#1d4ed8,#0ea5e9); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:15px; }
+  .logo-text { font-weight:800; font-size:16px; letter-spacing:-0.02em; color:#0f172a; }
+  .nav-section { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#94a3b8; font-weight:600; margin:18px 8px 8px; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; color:#475569; font-size:14px; font-weight:500; cursor:pointer; text-decoration:none; }
+  .nav-item i { font-size:18px; }
+  .nav-item:hover { background:#f8fafc; }
+  .nav-item.active { background:#eff6ff; color:#1d4ed8; font-weight:600; }
+  .sidebar-footer { margin-top:auto; padding-top:16px; border-top:1px solid #f1f5f9; }
+
+  .main { margin-left:240px; flex:1; padding:28px 32px 40px; max-width:calc(100% - 240px); }
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+  .page-title { font-size:22px; font-weight:800; letter-spacing:-0.02em; }
+  .page-sub { font-size:13px; color:#64748b; margin-top:2px; }
+  .btn-primary { background:linear-gradient(135deg,#1d4ed8,#0ea5e9); color:#fff; border:none; padding:10px 18px; border-radius:10px; font-weight:600; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar { display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; align-items:center; }
+  .search-box { position:relative; flex:1; min-width:220px; }
+  .search-box input { width:100%; padding:10px 14px 10px 38px; border:1px solid #e5e7eb; border-radius:10px; font-size:13.5px; outline:none; }
+  .search-box input:focus { border-color:#93c5fd; }
+  .search-box i { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:16px; }
+
+  select.filter-select {
+    border:1px solid #e5e7eb; border-radius:10px; padding:10px 14px; font-size:13px; color:#334155;
+    background:#fff; cursor:pointer; outline:none;
+  }
+
+  .chip-row { display:flex; gap:8px; flex-wrap:wrap; }
+  .chip {
+    font-size:12.5px; padding:7px 14px; border-radius:20px; border:1px solid #e5e7eb; cursor:pointer;
+    color:#475569; background:#fff; font-weight:500;
+  }
+  .chip.active { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
+
+  /* ── TABLE ── */
+  .table-card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  thead th {
+    text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:#94a3b8;
+    font-weight:600; padding:14px 18px; border-bottom:1px solid #f1f5f9; background:#fafbfc;
+  }
+  tbody td { padding:14px 18px; font-size:13.5px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+  tbody tr:hover { background:#fafbfc; }
+  tbody tr:last-child td { border-bottom:none; }
+
+  .lead-name { font-weight:600; color:#0f172a; }
+  .lead-sub { font-size:12px; color:#94a3b8; margin-top:1px; }
+
+  .badge { font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:8px; display:inline-flex; align-items:center; gap:5px; text-transform:uppercase; letter-spacing:.02em; }
+  .badge-hot { background:#fef2f2; color:#dc2626; }
+  .badge-warm { background:#fffbeb; color:#d97706; }
+  .badge-new { background:#f1f5f9; color:#64748b; }
+
+  .channel-icon { width:26px; height:26px; border-radius:7px; display:inline-flex; align-items:center; justify-content:center; font-size:13px; color:#fff; }
+  .ch-whatsapp { background:#25d366; }
+  .ch-instagram { background:linear-gradient(135deg,#f58529,#dd2a7b,#8134af); }
+  .ch-messenger { background:#0084ff; }
+
+  .score-bar-wrap { display:flex; align-items:center; gap:8px; }
+  .score-bar { width:60px; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden; }
+  .score-bar-fill { height:100%; border-radius:3px; }
+
+  .action-btns { display:flex; gap:6px; }
+  .icon-btn {
+    width:32px; height:32px; border-radius:8px; border:1px solid #e5e7eb; background:#fff; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; color:#64748b; font-size:15px;
+  }
+  .icon-btn:hover { background:#f8fafc; color:#1d4ed8; border-color:#bfdbfe; }
+  .icon-btn.paused { background:#fef2f2; color:#dc2626; border-color:#fecaca; }
+
+  .empty-state { text-align:center; padding:60px 20px; color:#94a3b8; }
+  .empty-state i { font-size:36px; margin-bottom:10px; display:block; }
+
+  /* ── MODAL RÉPONDRE / RÉSUMÉ ── */
+  .modal-overlay {
+    display:none; position:fixed; inset:0; background:rgba(15,23,42,0.4); z-index:200;
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-overlay.open { display:flex; }
+  .modal-box { background:#fff; border-radius:16px; padding:24px; width:100%; max-width:460px; max-height:80vh; overflow-y:auto; }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .modal-header h3 { font-size:16px; font-weight:700; }
+  .modal-close { cursor:pointer; color:#94a3b8; font-size:18px; }
+  .modal-textarea { width:100%; min-height:100px; border:1px solid #e5e7eb; border-radius:10px; padding:12px; font-size:13.5px; font-family:inherit; outline:none; resize:vertical; }
+  .modal-summary { font-size:13.5px; line-height:1.7; color:#334155; white-space:pre-wrap; }
+
+  @media (max-width: 860px) {
+    .sidebar { transform:translateX(-100%); }
+    .main { margin-left:0; max-width:100%; padding:20px; }
+    .table-card { overflow-x:auto; }
+    table { min-width:720px; }
+  }
+  .mobile-toggle { display:none; align-items:center; justify-content:center; width:38px; height:38px; border-radius:9px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; font-size:18px; }
+  @media (max-width: 860px) { .mobile-toggle { display:flex !important; } }
+</style>
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-mark">Z</div>
+    <div class="logo-text">ZENDIX PRO</div>
+  </div>
+  <div class="nav-section">Général</div>
+  <a class="nav-item" href="nervecenter_v6.html"><i class="ti ti-layout-dashboard"></i>Tableau de bord</a>
+  <a class="nav-item active"><i class="ti ti-users"></i>Leads</a>
+  <a class="nav-item"><i class="ti ti-messages"></i>Conversations</a>
+  <div class="nav-section">Configuration</div>
+  <a class="nav-item"><i class="ti ti-plug-connected"></i>Canaux</a>
+  <a class="nav-item"><i class="ti ti-bell"></i>Notifications</a>
+  <a class="nav-item"><i class="ti ti-chart-bar"></i>Analytiques</a>
+  <div class="nav-section">Compte</div>
+  <a class="nav-item"><i class="ti ti-settings"></i>Paramètres</a>
+  <a class="nav-item"><i class="ti ti-user-circle"></i>Mon compte</a>
+  <div class="sidebar-footer">
+    <div class="nav-item"><i class="ti ti-logout"></i>Déconnexion</div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="ti ti-menu-2"></i></div>
+      <div>
+        <div class="page-title">Leads</div>
+        <div class="page-sub" id="leadsCount">Chargement…</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="loadLeads()"><i class="ti ti-refresh"></i> Actualiser</button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="ti ti-search"></i>
+      <input type="text" id="searchInput" placeholder="Rechercher un nom, email, entreprise…" oninput="applyFilters()">
+    </div>
+    <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+      <option value="">Tous les statuts</option>
+      <option value="hot">Chaud</option>
+      <option value="warm">Warm</option>
+      <option value="new">Nouveau</option>
+    </select>
+    <select class="filter-select" id="channelFilter" onchange="applyFilters()">
+      <option value="">Tous les canaux</option>
+      <option value="whatsapp">WhatsApp</option>
+      <option value="instagram">Instagram</option>
+      <option value="messenger">Messenger</option>
+    </select>
+  </div>
+
+  <div class="chip-row" style="margin-bottom:16px;">
+    <div class="chip active" data-view="active" onclick="setView('active', this)">Actifs</div>
+    <div class="chip" data-view="archived" onclick="setView('archived', this)">Archivés</div>
+  </div>
+
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Lead</th>
+          <th>Canal</th>
+          <th>Statut</th>
+          <th>Score</th>
+          <th>Budget</th>
+          <th>Dernier contact</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="leadsTableBody">
+        <tr><td colspan="7" class="empty-state"><i class="ti ti-loader-2"></i>Chargement des leads…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- MODAL RÉPONDRE MANUELLEMENT -->
+<div class="modal-overlay" id="replyModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Répondre manuellement</h3>
+      <i class="ti ti-x modal-close" onclick="closeModal('replyModal')"></i>
+    </div>
+    <p style="font-size:12.5px;color:#94a3b8;margin-bottom:10px;" id="replyLeadName"></p>
+    <textarea class="modal-textarea" id="replyText" placeholder="Écrivez votre réponse…"></textarea>
+    <button class="btn-primary" style="margin-top:12px;width:100%;justify-content:center;" onclick="sendManualReply()">
+      <i class="ti ti-send"></i> Envoyer et mettre l'IA en pause
+    </button>
+  </div>
+</div>
+
+<!-- MODAL RÉSUMÉ IA -->
+<div class="modal-overlay" id="summaryModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Résumé IA — Closing</h3>
+      <i class="ti ti-x modal-close" onclick="closeModal('summaryModal')"></i>
+    </div>
+    <div class="modal-summary" id="summaryContent">Génération du résumé…</div>
+  </div>
+</div>
+
+<script>
+  var ZENDIX_API_BASE = 'http://localhost:3001';
+  var CLIENT_ID = 'scalmind_ia';
+  var currentView = 'active';
+  var allLeads = [];
+  var activeLeadForReply = null;
+
+  function setView(view, el) {
+    currentView = view;
+    document.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+    el.classList.add('active');
+    loadLeads();
+  }
+
+  async function loadLeads() {
+    var tbody = document.getElementById('leadsTableBody');
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="ti ti-loader-2"></i>Chargement des leads…</td></tr>';
+    try {
+      var url = currentView === 'archived'
+        ? ZENDIX_API_BASE + '/api/leads/archived?clientId=' + CLIENT_ID
+        : ZENDIX_API_BASE + '/api/leads?clientId=' + CLIENT_ID;
+      var res = await fetch(url);
+      allLeads = await res.json();
+      document.getElementById('leadsCount').textContent = allLeads.length + ' lead' + (allLeads.length !== 1 ? 's' : '') + (currentView === 'archived' ? ' archivé(s)' : ' actif(s)');
+      applyFilters();
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="ti ti-plug-connected-x"></i>Impossible de contacter ' + ZENDIX_API_BASE + '</td></tr>';
+    }
+  }
+
+  function applyFilters() {
+    var search = document.getElementById('searchInput').value.toLowerCase();
+    var status = document.getElementById('statusFilter').value;
+    var channel = document.getElementById('channelFilter').value;
+
+    var filtered = allLeads.filter(function(l) {
+      var matchSearch = !search ||
+        (l.name && l.name.toLowerCase().includes(search)) ||
+        (l.email && l.email.toLowerCase().includes(search)) ||
+        (l.company && l.company.toLowerCase().includes(search));
+      var matchStatus = !status || l.status === status;
+      var matchChannel = !channel || l.channel === channel || (!l.channel && channel === 'whatsapp');
+      return matchSearch && matchStatus && matchChannel;
+    });
+
+    renderTable(filtered);
+  }
+
+  function channelIcon(channel) {
+    if (channel === 'instagram') return '<span class="channel-icon ch-instagram"><i class="ti ti-brand-instagram"></i></span>';
+    if (channel === 'messenger') return '<span class="channel-icon ch-messenger"><i class="ti ti-brand-messenger"></i></span>';
+    return '<span class="channel-icon ch-whatsapp"><i class="ti ti-brand-whatsapp"></i></span>';
+  }
+
+  function statusBadge(status) {
+    if (status === 'hot') return '<span class="badge badge-hot"><i class="ti ti-flame"></i>Chaud</span>';
+    if (status === 'warm') return '<span class="badge badge-warm">Warm</span>';
+    return '<span class="badge badge-new">Nouveau</span>';
+  }
+
+  function scoreBar(score) {
+    score = score || 0;
+    var color = score >= 8 ? '#dc2626' : score >= 5 ? '#d97706' : '#94a3b8';
+    return '<div class="score-bar-wrap"><div class="score-bar"><div class="score-bar-fill" style="width:' + (score*10) + '%;background:' + color + ';"></div></div><span style="font-size:12px;color:#64748b;">' + score + '/10</span></div>';
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return '—';
+    var diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+    if (diff < 3600) return Math.floor(diff/60) + ' min';
+    if (diff < 86400) return Math.floor(diff/3600) + ' h';
+    return Math.floor(diff/86400) + ' j';
+  }
+
+  function renderTable(leads) {
+    var tbody = document.getElementById('leadsTableBody');
+    if (!leads.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="ti ti-inbox"></i>Aucun lead trouvé</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = leads.map(function(l) {
+      var pauseIcon = l.ia_paused ? 'ti-player-play' : 'ti-player-pause';
+      var pauseClass = l.ia_paused ? 'icon-btn paused' : 'icon-btn';
+      return '<tr>' +
+        '<td><div class="lead-name">' + (l.name || 'Inconnu') + '</div><div class="lead-sub">' + (l.email || l.company || l.session_id || '') + '</div></td>' +
+        '<td>' + channelIcon(l.channel) + '</td>' +
+        '<td>' + statusBadge(l.status) + '</td>' +
+        '<td>' + scoreBar(l.score) + '</td>' +
+        '<td>' + (l.budget || '—') + '</td>' +
+        '<td>' + timeAgo(l.updated_at || l.created_at) + '</td>' +
+        '<td><div class="action-btns">' +
+          '<button class="icon-btn" title="Répondre" onclick=\'openReply(' + JSON.stringify(l).replace(/'/g,"&#39;") + ')\'><i class="ti ti-message-2"></i></button>' +
+          '<button class="icon-btn" title="Résumé IA" onclick="openSummary(\'' + l.session_id + '\',\'' + l.id + '\')"><i class="ti ti-sparkles"></i></button>' +
+          '<button class="' + pauseClass + '" title="Pause IA" onclick="togglePause(\'' + l.id + '\', this)"><i class="ti ' + pauseIcon + '"></i></button>' +
+          '<button class="icon-btn" title="' + (currentView === 'archived' ? 'Désarchiver' : 'Archiver') + '" onclick="toggleArchive(\'' + l.id + '\', \'' + currentView + '\')"><i class="ti ti-archive"></i></button>' +
+        '</div></td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  async function togglePause(id, btnEl) {
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/lead/' + id + '/pause', { method:'PATCH' });
+      var data = await res.json();
+      if (data.success) {
+        btnEl.classList.toggle('paused');
+        btnEl.innerHTML = data.ia_paused ? '<i class="ti ti-player-play"></i>' : '<i class="ti ti-player-pause"></i>';
+      }
+    } catch(err) { alert('Erreur pause IA: ' + err.message); }
+  }
+
+  async function toggleArchive(id, view) {
+    try {
+      var endpoint = view === 'archived' ? '/api/lead/' + id + '/unarchive' : '/api/lead/' + id + '/archive';
+      await fetch(ZENDIX_API_BASE + endpoint, { method:'PATCH' });
+      loadLeads();
+    } catch(err) { alert('Erreur archivage: ' + err.message); }
+  }
+
+  function openReply(lead) {
+    activeLeadForReply = lead;
+    document.getElementById('replyLeadName').textContent = (lead.name || 'Inconnu') + ' — ' + (lead.channel || 'whatsapp').toUpperCase();
+    document.getElementById('replyText').value = '';
+    document.getElementById('replyModal').classList.add('open');
+  }
+
+  async function sendManualReply() {
+    var text = document.getElementById('replyText').value.trim();
+    if (!text || !activeLeadForReply) return;
+    try {
+      await fetch(ZENDIX_API_BASE + '/api/lead/' + activeLeadForReply.session_id + '/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: CLIENT_ID, channel: activeLeadForReply.channel || 'whatsapp', text: text })
+      });
+      closeModal('replyModal');
+      loadLeads();
+    } catch(err) { alert('Erreur envoi: ' + err.message); }
+  }
+
+  async function openSummary(sessionId, leadId) {
+    document.getElementById('summaryContent').textContent = 'Génération du résumé…';
+    document.getElementById('summaryModal').classList.add('open');
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/lead/' + sessionId + '/summary?clientId=' + CLIENT_ID);
+      var data = await res.json();
+      document.getElementById('summaryContent').textContent = data.summary || 'Aucun résumé disponible.';
+    } catch(err) {
+      document.getElementById('summaryContent').textContent = 'Erreur: ' + err.message;
+    }
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+
+  loadLeads();
+</script>
+
+</body>
+</html>
