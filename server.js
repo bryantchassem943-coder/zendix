@@ -102,6 +102,19 @@ async function uploadToSupabaseStorage(buffer, mimeType, ext, folder) {
   } catch(e) { console.error('uploadToSupabaseStorage erreur:', e.message); return null; }
 }
 
+// ─── TRACKING DES VISITES DU SITE (widget) ────────────────────────────────────
+async function trackSiteVisit(clientId, sessionId) {
+  try {
+    var result = await supabase.from('site_visits').upsert({
+      id: uuidv4(),
+      client_id: clientId,
+      session_id: sessionId,
+      created_at: new Date().toISOString()
+    }, { onConflict: 'client_id,session_id', ignoreDuplicates: true });
+    if (result.error) console.error('trackSiteVisit erreur:', result.error.message);
+  } catch(e) { console.error('trackSiteVisit erreur reseau:', e.message); }
+}
+
 async function getAgencyConfig(clientId) {
   try {
     var r = await supabase.from('agency_configs').select('*').eq('client_id', clientId).single();
@@ -774,34 +787,50 @@ async function runRelanceCheck() {
       .is('relance_sent_at', null)
       .eq('ia_paused', false)
       .neq('status', 'archived')
+      .not('email', 'is', null)
       .lt('updated_at', cutoff)
       .gt('score', 0);
     var leads = r.data || [];
     if (!leads.length) return;
 
+    if (!mailTransporter) {
+      console.log('Relance auto: ' + leads.length + ' lead(s) eligible(s) mais email non configure (GMAIL_USER/GMAIL_PASS manquants)');
+      return;
+    }
+
     console.log('Relance auto: ' + leads.length + ' lead(s) eligible(s)');
 
     for (var i = 0; i < leads.length; i++) {
       var lead = leads[i];
-      if (lead.channel && lead.channel !== 'whatsapp') continue; // relance uniquement sur WhatsApp pour l'instant
-      var agencyConfig = await getAgencyConfig(lead.client_id);
-      if (!agencyConfig || !agencyConfig.phone_number_id) continue;
-      var waToken = agencyConfig.whatsapp_token || process.env.WHATSAPP_TOKEN;
-      var to = lead.phone || lead.session_id;
-      if (!to) continue;
+      if (!lead.email) continue;
 
-      var firstName = (lead.name || '').split(' ')[0] || '';
-      var relanceText = firstName
-        ? 'Bonjour ' + firstName + ', je reviens vers vous concernant votre demande. Etes-vous toujours interesse(e) ? N\'hesitez pas a me repondre si vous avez des questions.'
-        : 'Bonjour, je reviens vers vous concernant votre demande. Etes-vous toujours interesse(e) ? N\'hesitez pas a me repondre si vous avez des questions.';
+      var agencyConfig = await getAgencyConfig(lead.client_id);
+      var agencyName = (agencyConfig && agencyConfig.agency_name) || 'notre equipe';
+      var agentName  = (agencyConfig && agencyConfig.agent_name) || agencyName;
+      var firstName  = (lead.name || '').split(' ')[0] || '';
+      var needLine   = lead.sector ? (' concernant ' + lead.sector) : '';
+
+      var subject  = firstName ? ('Toujours interesse, ' + firstName + ' ?') : 'Toujours interesse ?';
+      var htmlBody =
+        '<div style="font-family:Arial,sans-serif;color:#1e293b;line-height:1.6;max-width:520px;">' +
+          '<p>Bonjour' + (firstName ? ' ' + firstName : '') + ',</p>' +
+          '<p>Vous aviez echange avec ' + agencyName + needLine + '. Etes-vous toujours interesse(e) ?</p>' +
+          '<p>N\'hesitez pas a repondre directement a cet email, ou a revenir sur notre site pour continuer la conversation.</p>' +
+          '<p>Cordialement,<br>' + agentName + ' — ' + agencyName + '</p>' +
+        '</div>';
 
       try {
-        await sendWhatsAppMessage(to, relanceText, agencyConfig.phone_number_id, waToken);
-        await saveMessage(lead.session_id, lead.client_id, 'whatsapp', 'assistant', '[Relance automatique] ' + relanceText);
+        await mailTransporter.sendMail({
+          from: '"' + agencyName + '" <' + GMAIL_USER + '>',
+          to: lead.email,
+          subject: subject,
+          html: htmlBody
+        });
+        await saveMessage(lead.session_id, lead.client_id, 'web', 'assistant', '[Relance automatique par email envoyee a ' + lead.email + ']');
         await supabase.from('leads').update({ relance_sent_at: new Date().toISOString() }).eq('id', lead.id);
-        console.log('Relance envoyee a:', lead.name || to);
+        console.log('Relance email envoyee a:', lead.email);
       } catch(sendErr) {
-        console.error('Relance echec pour', to, ':', sendErr.message);
+        console.error('Relance email echec pour', lead.email, ':', sendErr.message);
       }
     }
   } catch(e) { console.error('runRelanceCheck erreur:', e.message); }
@@ -1081,6 +1110,15 @@ app.post('/api/chat', async function(req, res) {
 });
 
 // ─── API CHAT AUDIO (widget site web — texte + vocal transcrit uniquement) ────
+// ─── API TRACK VISIT (widget site web) ────────────────────────────────────────
+app.post('/api/track-visit', async function(req, res) {
+  var clientId  = (req.body && req.body.clientId)  || 'scalmind_ia';
+  var sessionId = (req.body && req.body.sessionId);
+  if (!sessionId) return res.status(400).json({ success:false });
+  await trackSiteVisit(clientId, sessionId);
+  res.json({ success:true });
+});
+
 app.post('/api/chat-audio', async function(req, res) {
   var sessionId   = (req.body && req.body.sessionId) || 'default';
   var clientId    = (req.body && req.body.clientId)  || 'scalmind_ia';
@@ -1168,6 +1206,16 @@ app.patch('/api/lead/:id/pause', async function(req, res) {
     await supabase.from('leads').update({ ia_paused: newState }).eq('id', req.params.id);
     console.log('Pause toggled:', req.params.id, newState);
     res.json({ success:true, ia_paused: newState });
+  } catch(err) { res.status(500).json({ error:err.message }); }
+});
+
+// ─── PAUSE IA PAR SESSION (widget site web — bouton "Parler a un conseiller") ─
+app.patch('/api/lead/session/:sessionId/pause', async function(req, res) {
+  var sessionId = req.params.sessionId;
+  var clientId  = req.query.clientId || 'scalmind_ia';
+  try {
+    await supabase.from('leads').update({ ia_paused: true }).eq('session_id', sessionId).eq('client_id', clientId);
+    res.json({ success:true });
   } catch(err) { res.status(500).json({ error:err.message }); }
 });
 
@@ -1313,14 +1361,14 @@ app.get('/api/stats', async function(req, res) {
       messenger: leads.filter(function(l){ return l.channel === 'messenger'; }).length,
     };
 
-    var msgR = await supabase.from('chat_history').select('id', { count: 'exact', head: true }).eq('client_id', clientId).eq('role', 'user');
-    var messagesReceived = msgR.count || 0;
+    var visitsR = await supabase.from('site_visits').select('id', { count: 'exact', head: true }).eq('client_id', clientId);
+    var siteVisits = visitsR.count || 0;
 
     var conversionRate = total ? (((hot + closing) / total) * 100).toFixed(1) : 0;
 
     res.json({
       total: total, hot: hot, warm: warm, new: newCount, closing: closing, demoScheduled: demoScheduled,
-      avgScore: avgScore, byChannel: byChannel, messagesReceived: messagesReceived, conversionRate: conversionRate
+      avgScore: avgScore, byChannel: byChannel, siteVisits: siteVisits, conversionRate: conversionRate
     });
   } catch(err) { res.json({}); }
 });

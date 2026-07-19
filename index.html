@@ -316,7 +316,7 @@
 
     <div class="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-top"><div class="kpi-label">Messages reçus</div><div class="kpi-icon icon-blue"><i class="ti ti-message-circle"></i></div></div>
+        <div class="kpi-top"><div class="kpi-label">Trafic du site</div><div class="kpi-icon icon-blue"><i class="ti ti-eye"></i></div></div>
         <div class="kpi-value" id="kpiMessages">—</div>
       </div>
       <div class="kpi-card">
@@ -971,7 +971,7 @@
       var s = await res.json();
       if (!s || typeof s.total === 'undefined') return;
 
-      document.getElementById('kpiMessages').textContent = (s.messagesReceived || 0).toLocaleString('fr-FR');
+      document.getElementById('kpiMessages').textContent = (s.siteVisits || 0).toLocaleString('fr-FR');
       document.getElementById('kpiLeads').textContent = (s.total || 0).toLocaleString('fr-FR');
       document.getElementById('kpiRdv').textContent = (s.demoScheduled || 0).toLocaleString('fr-FR');
       document.getElementById('kpiConv').textContent = (s.conversionRate || 0) + '%';
@@ -1261,17 +1261,21 @@
     currentConvLead = lead;
     clearPendingAttachment();
 
-    document.getElementById('convHeader').querySelector('.card-title').textContent = lead.name || 'Inconnu';
-    document.getElementById('convHeader').querySelector('.card-sub').textContent = (lead.channel || 'whatsapp').toUpperCase() + ' — ' + (lead.email || lead.session_id || '');
+    document.getElementById('convHeaderName').textContent = lead.name || 'Inconnu';
+    document.getElementById('convHeaderSub').textContent = (lead.channel || 'whatsapp').toUpperCase() + ' — ' + (lead.email || lead.session_id || '');
+    document.getElementById('convHeaderAvatar').textContent = (lead.name || '?').charAt(0).toUpperCase();
+
+    document.getElementById('convHeader').style.display = 'flex';
+    document.getElementById('convEmptyPlaceholder').style.display = 'none';
 
     var pauseBtn = document.getElementById('convPauseBtn');
-    pauseBtn.style.display = 'flex';
     pauseBtn.classList.toggle('paused', !!lead.ia_paused);
     pauseBtn.innerHTML = lead.ia_paused ? '<i class="ti ti-player-play"></i>' : '<i class="ti ti-player-pause"></i>';
 
     document.getElementById('convReplyRow').style.display = 'flex';
 
     var chat = document.getElementById('convChat');
+    chat.style.display = 'flex';
     chat.innerHTML = '<div class="empty-state"><i class="ti ti-loader-2"></i>Chargement de l\'historique…</div>';
 
     try {
