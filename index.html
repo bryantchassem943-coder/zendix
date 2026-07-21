@@ -520,7 +520,6 @@
             </div>
           </div>
           <button class="icon-btn" id="convRdvBtn" title="Planifier RDV" onclick="openRdvModalFromConv()"><i class="ti ti-calendar-event"></i></button>
-          <button class="icon-btn" id="convPauseBtn" title="Pause IA" onclick="toggleConvPause()"><i class="ti ti-player-pause"></i></button>
         </div>
         <div class="empty-state" id="convEmptyPlaceholder" style="margin:auto;">
           <i class="ti ti-brand-whatsapp"></i>Sélectionnez une conversation
@@ -671,8 +670,21 @@
 
 </main>
 
+<div class="modal-overlay" id="replyModal">
+  <div class="modal-box">
+    <div class="modal-header"><h3>Répondre manuellement</h3><i class="ti ti-x modal-close" onclick="closeModal('replyModal')"></i></div>
+    <p style="font-size:12.5px;color:#94a3b8;margin-bottom:10px;" id="replyLeadName"></p>
+    <textarea class="modal-textarea" id="replyText" placeholder="Écrivez votre réponse…"></textarea>
+    <button class="btn-primary" style="margin-top:12px;width:100%;justify-content:center;" onclick="sendManualReply()"><i class="ti ti-send"></i> Envoyer et mettre l'IA en pause</button>
+  </div>
+</div>
 
-
+<div class="modal-overlay" id="summaryModal">
+  <div class="modal-box">
+    <div class="modal-header"><h3>Résumé IA — Closing</h3><i class="ti ti-x modal-close" onclick="closeModal('summaryModal')"></i></div>
+    <div class="modal-summary" id="summaryContent">Génération du résumé…</div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="rdvModal">
   <div class="modal-box">
@@ -1126,8 +1138,6 @@
       return;
     }
     tbody.innerHTML = leads.map(function(l) {
-      var pauseIcon = l.ia_paused ? 'ti-player-play' : 'ti-player-pause';
-      var pauseClass = l.ia_paused ? 'icon-btn paused' : 'icon-btn';
       return '<tr>' +
         '<td><div class="lead-name">' + (l.name || 'Inconnu') + '</div><div class="lead-sub">' + (l.email || l.company || l.session_id || '') + (l.contact_preference ? ' · pref. ' + l.contact_preference : '') + '</div></td>' +
         '<td><button class="channel-icon-btn" title="Ouvrir la conversation" onclick=\'goToConversation(' + JSON.stringify(l).replace(/'/g,"&#39;") + ')\'>' + channelIcon(l.channel) + '</button></td>' +
@@ -1140,7 +1150,6 @@
           '<button class="icon-btn" title="Répondre" onclick=\'openReply(' + JSON.stringify(l).replace(/'/g,"&#39;") + ')\'><i class="ti ti-message-2"></i></button>' +
           '<button class="icon-btn" title="Planifier RDV" onclick=\'openRdvModal(' + JSON.stringify(l).replace(/'/g,"&#39;") + ')\'><i class="ti ti-calendar-event"></i></button>' +
           '<button class="icon-btn" title="Résumé IA" onclick="openSummary(\'' + l.session_id + '\')"><i class="ti ti-sparkles"></i></button>' +
-          '<button class="' + pauseClass + '" title="Pause IA" onclick="togglePause(\'' + l.id + '\', this)"><i class="ti ' + pauseIcon + '"></i></button>' +
           '<button class="icon-btn" title="' + (currentLeadsView === 'archived' ? 'Désarchiver' : 'Archiver') + '" onclick="toggleArchive(\'' + l.id + '\', \'' + currentLeadsView + '\')"><i class="ti ti-archive"></i></button>' +
         '</div></td>' +
       '</tr>';
@@ -1170,17 +1179,6 @@
       var data = await res.json();
       if (!data.success) console.error('Erreur mise a jour suivi:', data.error);
     } catch(err) { console.error('Erreur mise a jour suivi:', err.message); }
-  }
-
-  async function togglePause(id, btnEl) {
-    try {
-      var res = await fetch(ZENDIX_API_BASE + '/api/lead/' + id + '/pause', { method:'PATCH' });
-      var data = await res.json();
-      if (data.success) {
-        btnEl.classList.toggle('paused');
-        btnEl.innerHTML = data.ia_paused ? '<i class="ti ti-player-play"></i>' : '<i class="ti ti-player-pause"></i>';
-      }
-    } catch(err) { alert('Erreur pause IA: ' + err.message); }
   }
 
   async function toggleArchive(id, view) {
@@ -1377,10 +1375,6 @@
     document.getElementById('convHeader').style.display = 'flex';
     document.getElementById('convEmptyPlaceholder').style.display = 'none';
 
-    var pauseBtn = document.getElementById('convPauseBtn');
-    pauseBtn.classList.toggle('paused', !!lead.ia_paused);
-    pauseBtn.innerHTML = lead.ia_paused ? '<i class="ti ti-player-play"></i>' : '<i class="ti ti-player-pause"></i>';
-
     document.getElementById('convReplyRow').style.display = 'flex';
 
     var chat = document.getElementById('convChat');
@@ -1408,20 +1402,6 @@
       chat.innerHTML = history.length ? history.map(function(m) { return renderChatMessage(m); }).join('') : '<div class="empty-state"><i class="ti ti-message-off"></i>Aucun message</div>';
       chat.scrollTop = chat.scrollHeight;
     } catch(err) { console.error('Impossible de rafraichir la conversation:', err.message); }
-  }
-
-  async function toggleConvPause() {
-    if (!currentConvLead) return;
-    try {
-      var res = await fetch(ZENDIX_API_BASE + '/api/lead/' + currentConvLead.id + '/pause', { method:'PATCH' });
-      var data = await res.json();
-      if (data.success) {
-        currentConvLead.ia_paused = data.ia_paused;
-        var btn = document.getElementById('convPauseBtn');
-        btn.classList.toggle('paused', data.ia_paused);
-        btn.innerHTML = data.ia_paused ? '<i class="ti ti-player-play"></i>' : '<i class="ti ti-player-pause"></i>';
-      }
-    } catch(err) { alert('Erreur pause IA: ' + err.message); }
   }
 
   function handleConvFileSelect(event) {
@@ -1524,12 +1504,6 @@
         body: JSON.stringify(payload)
       });
       var data = await res.json();
-      if (data.success) {
-        currentConvLead.ia_paused = true;
-        var pauseBtn = document.getElementById('convPauseBtn');
-        pauseBtn.classList.add('paused');
-        pauseBtn.innerHTML = '<i class="ti ti-player-play"></i>';
-      }
       await refreshCurrentConversation();
     } catch(err) {
       alert('Erreur envoi: ' + err.message);

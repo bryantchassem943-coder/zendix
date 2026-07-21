@@ -47,7 +47,8 @@ if (GMAIL_USER && GMAIL_PASS) {
 }
 
 async function sendHotLeadEmail(toEmail, lead, agencyName) {
-  if (!mailTransporter || !toEmail) return;
+  if (!mailTransporter) { console.log('Email hot lead IGNORE: GMAIL_USER/GMAIL_PASS non configures sur le serveur.'); return; }
+  if (!toEmail) { console.log('Email hot lead IGNORE: aucun "email de notification" configure pour ce client (onglet Canaux).'); return; }
   try {
     await mailTransporter.sendMail({
       from: '"ZENDIX PRO" <' + GMAIL_USER + '>',
@@ -727,22 +728,6 @@ async function sendReplyByChannel(channel, to, text, ctx) {
   }
 }
 
-async function isIaPaused(from, clientId) {
-  try {
-    var r = await supabase.from('leads')
-      .select('ia_paused')
-      .eq('client_id', clientId)
-      .or('session_id.eq.' + from + ',phone.eq.' + from)
-      .limit(1);
-    console.log('isIaPaused check:', from, clientId, r.data);
-    if (r.data && r.data.length > 0) return r.data[0].ia_paused === true;
-    return false;
-  } catch(e) {
-    console.log('isIaPaused erreur:', e.message);
-    return false;
-  }
-}
-
 async function leadExistsDeja(email, sessionId, clientId) {
   try {
     if (email) {
@@ -851,7 +836,6 @@ async function runRelanceCheck() {
     var r = await supabase.from('leads')
       .select('*')
       .is('relance_sent_at', null)
-      .eq('ia_paused', false)
       .neq('status', 'archived')
       .not('email', 'is', null)
       .lt('updated_at', cutoff)
@@ -930,13 +914,6 @@ async function processIncomingText(params) {
   var from = params.from, text = params.text, clientId = params.clientId;
   var agencyConfig = params.agencyConfig, channel = params.channel, sendCtx = params.sendCtx;
   var mediaUrl = params.mediaUrl || null, mediaType = params.mediaType || null;
-
-  var paused = await isIaPaused(from, clientId);
-  if (paused) {
-    console.log('IA en pause pour', from, '[' + channel + '] — message ignore (media conserve quand meme)');
-    if (mediaUrl) await saveMessage(from, clientId, channel, 'user', text, mediaUrl, mediaType);
-    return;
-  }
 
   console.log(channel.toUpperCase() + ' [' + clientId + '] de', from, ':', text);
 
@@ -1333,23 +1310,17 @@ app.patch('/api/lead/:id/handling', async function(req, res) {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-app.patch('/api/lead/:id/pause', async function(req, res) {
-  try {
-    var r = await supabase.from('leads').select('ia_paused').eq('id', req.params.id).single();
-    if (r.error || !r.data) return res.status(404).json({ error:'Lead introuvable' });
-    var newState = !r.data.ia_paused;
-    await supabase.from('leads').update({ ia_paused: newState }).eq('id', req.params.id);
-    console.log('Pause toggled:', req.params.id, newState);
-    res.json({ success:true, ia_paused: newState });
-  } catch(err) { res.status(500).json({ error:err.message }); }
-});
-
-// ─── PAUSE IA PAR SESSION (widget site web — bouton "Parler a un conseiller") ─
+// ─── DEMANDE DE CONSEILLER PAR SESSION (widget site web — bouton "Parler a un conseiller") ─
+// Ne met plus l'IA en pause : cree simplement une notification pour que l'equipe prenne le relais elle-meme.
 app.patch('/api/lead/session/:sessionId/pause', async function(req, res) {
   var sessionId = req.params.sessionId;
   var clientId  = req.query.clientId || 'scalmind_ia';
   try {
-    await supabase.from('leads').update({ ia_paused: true }).eq('session_id', sessionId).eq('client_id', clientId);
+    var leadR = await supabase.from('leads').select('id, name').eq('session_id', sessionId).eq('client_id', clientId).single();
+    var lead = leadR.data;
+    await saveNotification(clientId, lead ? lead.id : null, 'human_requested',
+      'Demande de conseiller — ' + (lead ? (lead.name || 'Prospect') : sessionId),
+      'Le visiteur a demande a parler a un conseiller.');
     res.json({ success:true });
   } catch(err) { res.status(500).json({ error:err.message }); }
 });
@@ -1410,9 +1381,7 @@ app.post('/api/lead/:sessionId/reply', async function(req, res) {
       await sendReplyByChannel(channel, sessionId, text, sendCtx);
     }
 
-    await supabase.from('leads').update({ ia_paused: true }).eq('session_id', sessionId).eq('client_id', clientId);
-
-    res.json({ success:true, ia_paused: true });
+    res.json({ success:true });
   } catch(err) { res.status(500).json({ error:err.message }); }
 });
 
@@ -1431,16 +1400,11 @@ app.get('/api/lead/:sessionId/summary', async function(req, res) {
     var prompt =
       'Voici une conversation entre un agent IA et un prospect/patient.\n\n' +
       conv + '\n\n' +
-      'Génère un résumé structuré UNIQUEMENT avec ces sections:\n' +
-      '👤 NOM: (nom du prospect)\n' +
-      '🏢 ENTREPRISE/CLINIQUE: (si mentionnée)\n' +
-      '📞 CONTACT: (numéro ou email si mentionné)\n' +
-      '💰 BUDGET: (si mentionné)\n' +
-      '🎯 OBJECTIF: (besoin principal)\n' +
-      '📊 NIVEAU INTÉRÊT: (froid/tiède/chaud/très chaud)\n' +
-      '🧠 ANALYSE: (2-3 phrases sur le prospect)\n' +
-      '🎯 CONSEIL CLOSING: (1-2 phrases concrètes pour closer)\n\n' +
-      'Sois concis et direct. Réponds en français.';
+      'Redige un resume sous forme d\'UN SEUL PARAGRAPHE fluide et naturel, sans liste a puces et sans labels ' +
+      '(pas de "NOM:", pas de "BUDGET:", pas d\'emojis). Le paragraphe doit raconter qui est ce prospect, ce qu\'il recherche, ' +
+      'les informations utiles qu\'il a donnees (contact, budget, entreprise si mentionnee), son niveau d\'interet, ' +
+      'et se terminer par un conseil concret pour le conseiller qui va le recontacter. ' +
+      'Reste concis (5 a 8 phrases maximum). Reponds en francais.';
 
     var messages = [
       { role:'system', content:'Tu es un expert en analyse commerciale et closing.' },
