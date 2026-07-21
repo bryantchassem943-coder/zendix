@@ -115,6 +115,55 @@ async function trackSiteVisit(clientId, sessionId) {
   } catch(e) { console.error('trackSiteVisit erreur reseau:', e.message); }
 }
 
+// ─── GENERATION DE FICHIER .ICS (RDV — zero dependance API tierce) ────────────
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+function toICSDate(dateObj) {
+  // Format UTC requis par la norme iCalendar : YYYYMMDDTHHMMSSZ
+  return dateObj.getUTCFullYear() +
+    pad2(dateObj.getUTCMonth() + 1) +
+    pad2(dateObj.getUTCDate()) + 'T' +
+    pad2(dateObj.getUTCHours()) +
+    pad2(dateObj.getUTCMinutes()) +
+    pad2(dateObj.getUTCSeconds()) + 'Z';
+}
+
+function escapeICSText(text) {
+  return String(text || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n');
+}
+
+function generateICS(opts) {
+  var uid = opts.uid || (uuidv4() + '@zendixpro');
+  var now = new Date();
+  var start = new Date(opts.startAt);
+  var end = new Date(start.getTime() + (opts.durationMinutes || 30) * 60000);
+
+  var lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//ZENDIX PRO//RDV//FR',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    'UID:' + uid,
+    'DTSTAMP:' + toICSDate(now),
+    'DTSTART:' + toICSDate(start),
+    'DTEND:' + toICSDate(end),
+    'SUMMARY:' + escapeICSText(opts.title || 'Rendez-vous'),
+    'DESCRIPTION:' + escapeICSText(opts.description || ''),
+    'LOCATION:' + escapeICSText(opts.location || ''),
+    'STATUS:CONFIRMED',
+    'SEQUENCE:0',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ];
+  return lines.join('\r\n');
+}
+
 async function getAgencyConfig(clientId) {
   try {
     var r = await supabase.from('agency_configs').select('*').eq('client_id', clientId).single();
@@ -177,8 +226,9 @@ function buildSystemPrompt(config) {
     base += 'Tu es ZENDIX AI, expert en marketing digital.\n\n';
   }
   base += 'Tu reponds en francais. Collecte naturellement le nom, email, entreprise, budget et objectif du prospect. ';
+  base += 'Des que le prospect confirme un interet reel (envie de visiter, d\'etre recontacte, de prendre RDV), demande-lui EXPLICITEMENT par quel moyen il prefere etre recontacte (telephone, email ou WhatsApp) avant de le mettre en relation avec un conseiller. ';
   base += 'A la FIN de CHAQUE reponse ajoute EXACTEMENT ce bloc (sans le modifier): ';
-  base += '[DATA]{"lead_info":{"nom":null,"email":null,"entreprise":null,"budget":null,"objectif":null},"lead_score":0,"score_reason":"","info_collected":false}[/DATA]. ';
+  base += '[DATA]{"lead_info":{"nom":null,"email":null,"entreprise":null,"budget":null,"objectif":null,"moyen_contact":null},"lead_score":0,"score_reason":"","info_collected":false}[/DATA]. ';
   base += 'Score 1-10: 1-3 curieux, 4-6 projet vague, 7-8 budget confirme, 9-10 urgent avec email.';
   return base;
 }
@@ -717,6 +767,17 @@ async function saveToSupabase(leadInfo, score, reason, sessionId, clientId, chan
     .eq('client_id', clientId)
     .single();
 
+  // Pas de match par session_id : on verifie par email avant de creer une ligne,
+  // pour eviter un doublon si le meme prospect revient depuis un autre appareil/navigateur
+  if (!existing.data && leadInfo.email) {
+    var byEmail = await supabase.from('leads')
+      .select('id')
+      .eq('email', leadInfo.email)
+      .eq('client_id', clientId)
+      .single();
+    if (byEmail.data) existing = byEmail;
+  }
+
   if (existing.data) {
     var updatePayload = {
       name: displayName !== 'Inconnu' ? displayName : undefined,
@@ -724,16 +785,18 @@ async function saveToSupabase(leadInfo, score, reason, sessionId, clientId, chan
       company: leadInfo.entreprise || undefined,
       sector: leadInfo.objectif || undefined,
       budget: leadInfo.budget || undefined,
+      contact_preference: leadInfo.moyen_contact || undefined,
       score: score,
       status: score >= 9 ? 'hot' : score >= 7 ? 'warm' : 'new',
       pipeline_stage: score >= 9 ? 'CLOSING' : score >= 7 ? 'DEMO_SCHEDULED' : 'PROSPECT',
       channel: channel,
+      session_id: sessionId, // rattache la ligne a la conversation la plus recente
     };
     Object.keys(updatePayload).forEach(function(k) { if (updatePayload[k] === undefined) delete updatePayload[k]; });
-    var result = await supabase.from('leads').update(updatePayload).eq('session_id', sessionId).eq('client_id', clientId);
+    var result = await supabase.from('leads').update(updatePayload).eq('id', existing.data.id);
     if (result.error) console.error('Update erreur:', result.error.message);
-    else console.log('Lead mis a jour:', displayName, score + '/10', '[' + channel + ']');
-    return Object.assign({ session_id: sessionId, phone: leadInfo.whatsapp || null, client_id: clientId }, updatePayload);
+    else console.log('Lead mis a jour (dedup):', displayName, score + '/10', '[' + channel + ']');
+    return Object.assign({ id: existing.data.id, session_id: sessionId, phone: leadInfo.whatsapp || null, client_id: clientId }, updatePayload);
   } else {
     var payload = {
       id: uuidv4(),
@@ -743,9 +806,12 @@ async function saveToSupabase(leadInfo, score, reason, sessionId, clientId, chan
       company: leadInfo.entreprise || null,
       sector: leadInfo.objectif || null,
       budget: leadInfo.budget || null,
+      contact_preference: leadInfo.moyen_contact || null,
       score: score,
       status: score >= 9 ? 'hot' : score >= 7 ? 'warm' : 'new',
       pipeline_stage: score >= 9 ? 'CLOSING' : score >= 7 ? 'DEMO_SCHEDULED' : 'PROSPECT',
+      handling_status: 'a_traiter',
+      assigned_to: null,
       session_id: sessionId,
       phone: leadInfo.whatsapp || null,
       channel: channel,
@@ -1076,18 +1142,24 @@ async function processWebMessage(sessionId, clientId, message, mediaUrl, mediaTy
   }
   session.leadScore = Math.max(session.leadScore, data.lead_score || 0);
 
+  // Le lead web n'apparait au dashboard QUE lorsque l'email a ete capture
+  // (contrairement a WhatsApp ou le numero est deja connu des le 1er message)
   var leadSaved = false;
-  if (!session.leadSent && session.leadInfo.email && session.leadScore >= 5) {
-    var deja = await leadExistsDeja(session.leadInfo.email, sessionId, clientId);
-    if (!deja) {
-      session.leadSent = true;
-      var savedLead = await saveToSupabase(session.leadInfo, session.leadScore, data.score_reason, sessionId, clientId, 'web');
-      leadSaved = true;
-      if (!session.notifSent && agencyConfig && agencyConfig.notification_email) {
-        session.notifSent = true;
-        await sendHotLeadEmail(agencyConfig.notification_email, savedLead, agencyConfig.agency_name);
-      }
-    } else { session.leadSent = true; }
+  var savedLead = null;
+  if (session.leadInfo.email) {
+    savedLead = await saveToSupabase(session.leadInfo, session.leadScore, data.score_reason, sessionId, clientId, 'web');
+    leadSaved = true;
+
+    if (session.leadScore >= 7) {
+      await saveNotification(clientId, savedLead && savedLead.id, 'hot_lead',
+        'Lead chaud — ' + (savedLead ? savedLead.name : sessionId),
+        'Score ' + session.leadScore + '/10 sur le site web');
+    }
+
+    if (!session.notifSent && agencyConfig && agencyConfig.notification_email && session.leadScore >= 7) {
+      session.notifSent = true;
+      await sendHotLeadEmail(agencyConfig.notification_email, savedLead, agencyConfig.agency_name);
+    }
   }
 
   return { reply: clean, leadScore: session.leadScore, leadSaved: leadSaved, turns: session.turns };
@@ -1109,7 +1181,6 @@ app.post('/api/chat', async function(req, res) {
   }
 });
 
-// ─── API CHAT AUDIO (widget site web — texte + vocal transcrit uniquement) ────
 // ─── API TRACK VISIT (widget site web) ────────────────────────────────────────
 app.post('/api/track-visit', async function(req, res) {
   var clientId  = (req.body && req.body.clientId)  || 'scalmind_ia';
@@ -1117,6 +1188,56 @@ app.post('/api/track-visit', async function(req, res) {
   if (!sessionId) return res.status(400).json({ success:false });
   await trackSiteVisit(clientId, sessionId);
   res.json({ success:true });
+});
+
+// ─── API RDV (.ics — zero dependance Google/Outlook) ──────────────────────────
+// Genere le fichier .ics, l'enregistre sur le lead (date + statut pipeline),
+// et le renvoie en telechargement direct.
+app.post('/api/lead/:id/rdv', async function(req, res) {
+  var leadId = req.params.id;
+  var date = req.body && req.body.date;         // 'YYYY-MM-DD'
+  var time = req.body && req.body.time;         // 'HH:MM'
+  var durationMinutes = (req.body && parseInt(req.body.durationMinutes, 10)) || 30;
+  var title = (req.body && req.body.title) || 'Rendez-vous';
+  var location = (req.body && req.body.location) || '';
+  var notes = (req.body && req.body.notes) || '';
+
+  if (!date || !time) return res.status(400).json({ error: 'Date et heure requises.' });
+
+  try {
+    var leadR = await supabase.from('leads').select('*').eq('id', leadId).single();
+    if (leadR.error || !leadR.data) return res.status(404).json({ error: 'Lead introuvable' });
+    var lead = leadR.data;
+
+    var startAt = new Date(date + 'T' + time + ':00');
+    if (isNaN(startAt.getTime())) return res.status(400).json({ error: 'Date/heure invalide.' });
+
+    var uid = uuidv4() + '@zendixpro';
+    var icsContent = generateICS({
+      uid: uid,
+      startAt: startAt,
+      durationMinutes: durationMinutes,
+      title: title + (lead.name ? ' — ' + lead.name : ''),
+      description: notes || ('Rendez-vous avec ' + (lead.name || 'un prospect') + '.'),
+      location: location
+    });
+
+    await supabase.from('leads').update({
+      pipeline_stage: 'DEMO_SCHEDULED',
+      rdv_at: startAt.toISOString(),
+      rdv_ics_uid: uid
+    }).eq('id', leadId);
+
+    await saveNotification(lead.client_id, leadId, 'rdv_scheduled',
+      'RDV planifié — ' + (lead.name || 'Prospect'),
+      'Le ' + date + ' à ' + time);
+
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="rdv-' + leadId + '.ics"');
+    res.send(icsContent);
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/chat-audio', async function(req, res) {
@@ -1196,6 +1317,20 @@ app.post('/api/lead', async function(req, res) {
     await supabase.from('leads').insert(payload);
     res.json({ success:true, lead:payload });
   } catch(err) { res.status(500).json({ error:err.message }); }
+});
+
+// ─── SUIVI EQUIPE (assignation + statut de prise en charge) ──────────────────
+app.patch('/api/lead/:id/handling', async function(req, res) {
+  var assignedTo = req.body && req.body.assignedTo;
+  var status = req.body && req.body.status;
+  var payload = {};
+  if (typeof assignedTo !== 'undefined') payload.assigned_to = assignedTo || null;
+  if (typeof status !== 'undefined' && status) payload.handling_status = status;
+  if (!Object.keys(payload).length) return res.status(400).json({ error: 'Rien a mettre a jour.' });
+  try {
+    await supabase.from('leads').update(payload).eq('id', req.params.id);
+    res.json({ success:true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
 app.patch('/api/lead/:id/pause', async function(req, res) {
@@ -1503,11 +1638,12 @@ app.get('/api/health', function(req, res) {
 
 app.listen(PORT, function() {
   console.log('='.repeat(52));
-  console.log('ZENDIX PRO v6.2 — port', PORT);
+  console.log('ZENDIX PRO v6.3 — port', PORT);
   console.log('Multi-tenant: ON | Supabase memory: ON');
   console.log('Multi-canal: WhatsApp + Messenger + Instagram');
   console.log('Stockage media permanent: ON (bucket ' + MEDIA_BUCKET + ')');
   console.log('Email notifications:', mailTransporter ? 'ON (' + GMAIL_USER + ')' : 'OFF');
   console.log('ElevenLabs voice: ON (WhatsApp only, >' + VOICE_WORD_LIMIT + ' mots)');
+  console.log('RDV .ics: ON (zero dependance Google/Outlook)');
   console.log('='.repeat(52));
 });

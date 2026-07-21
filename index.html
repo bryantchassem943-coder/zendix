@@ -413,10 +413,10 @@
     <div class="table-card">
       <table>
         <thead>
-          <tr><th>Lead</th><th>Canal</th><th>Statut</th><th>Score</th><th>Budget</th><th>Dernier contact</th><th>Actions</th></tr>
+          <tr><th>Lead</th><th>Canal</th><th>Statut</th><th>Score</th><th>Budget</th><th>Dernier contact</th><th>Suivi</th><th>Actions</th></tr>
         </thead>
         <tbody id="leadsTableBody">
-          <tr><td colspan="7" class="empty-state"><i class="ti ti-loader-2"></i>Chargement des leads…</td></tr>
+          <tr><td colspan="8" class="empty-state"><i class="ti ti-loader-2"></i>Chargement des leads…</td></tr>
         </tbody>
       </table>
     </div>
@@ -519,6 +519,7 @@
               <div class="wa-header-sub" id="convHeaderSub">—</div>
             </div>
           </div>
+          <button class="icon-btn" id="convRdvBtn" title="Planifier RDV" onclick="openRdvModalFromConv()"><i class="ti ti-calendar-event"></i></button>
           <button class="icon-btn" id="convPauseBtn" title="Pause IA" onclick="toggleConvPause()"><i class="ti ti-player-pause"></i></button>
         </div>
         <div class="empty-state" id="convEmptyPlaceholder" style="margin:auto;">
@@ -670,19 +671,30 @@
 
 </main>
 
-<div class="modal-overlay" id="replyModal">
-  <div class="modal-box">
-    <div class="modal-header"><h3>Répondre manuellement</h3><i class="ti ti-x modal-close" onclick="closeModal('replyModal')"></i></div>
-    <p style="font-size:12.5px;color:#94a3b8;margin-bottom:10px;" id="replyLeadName"></p>
-    <textarea class="modal-textarea" id="replyText" placeholder="Écrivez votre réponse…"></textarea>
-    <button class="btn-primary" style="margin-top:12px;width:100%;justify-content:center;" onclick="sendManualReply()"><i class="ti ti-send"></i> Envoyer et mettre l'IA en pause</button>
-  </div>
-</div>
 
-<div class="modal-overlay" id="summaryModal">
+
+
+<div class="modal-overlay" id="rdvModal">
   <div class="modal-box">
-    <div class="modal-header"><h3>Résumé IA — Closing</h3><i class="ti ti-x modal-close" onclick="closeModal('summaryModal')"></i></div>
-    <div class="modal-summary" id="summaryContent">Génération du résumé…</div>
+    <div class="modal-header"><h3>Planifier un RDV</h3><i class="ti ti-x modal-close" onclick="closeModal('rdvModal')"></i></div>
+    <p style="font-size:12.5px;color:#94a3b8;margin-bottom:14px;" id="rdvLeadName"></p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div>
+        <label style="font-size:12.5px;color:#64748b;font-weight:600;">Date</label>
+        <input type="date" class="modal-textarea" id="rdvDate" style="min-height:auto;padding:10px 12px;margin-top:6px;">
+      </div>
+      <div>
+        <label style="font-size:12.5px;color:#64748b;font-weight:600;">Heure</label>
+        <input type="time" class="modal-textarea" id="rdvTime" style="min-height:auto;padding:10px 12px;margin-top:6px;">
+      </div>
+    </div>
+    <label style="font-size:12.5px;color:#64748b;font-weight:600;">Durée (minutes)</label>
+    <input type="number" min="10" step="5" value="30" class="modal-textarea" id="rdvDuration" style="min-height:auto;padding:10px 12px;margin:6px 0 10px;max-width:140px;">
+    <label style="font-size:12.5px;color:#64748b;font-weight:600;">Lieu / lien visio (optionnel)</label>
+    <input class="modal-textarea" id="rdvLocation" style="min-height:auto;padding:10px 12px;margin:6px 0 10px;">
+    <label style="font-size:12.5px;color:#64748b;font-weight:600;">Notes (optionnel)</label>
+    <textarea class="modal-textarea" id="rdvNotes" style="min-height:70px;"></textarea>
+    <button class="btn-primary" style="margin-top:14px;width:100%;justify-content:center;" onclick="confirmRdv()"><i class="ti ti-calendar-event"></i> Générer le .ics et planifier</button>
   </div>
 </div>
 
@@ -1049,7 +1061,7 @@
 
   async function loadLeads() {
     var tbody = document.getElementById('leadsTableBody');
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="ti ti-loader-2"></i>Chargement des leads…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="ti ti-loader-2"></i>Chargement des leads…</td></tr>';
     try {
       var url = currentLeadsView === 'archived'
         ? ZENDIX_API_BASE + '/api/leads/archived?clientId=' + CLIENT_ID
@@ -1059,7 +1071,7 @@
       document.getElementById('leadsCount').textContent = allLeads.length + ' lead' + (allLeads.length !== 1 ? 's' : '') + (currentLeadsView === 'archived' ? ' archivé(s)' : ' actif(s)');
       applyFilters();
     } catch (err) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="ti ti-plug-connected-x"></i>Impossible de contacter ' + ZENDIX_API_BASE + '</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="ti ti-plug-connected-x"></i>Impossible de contacter ' + ZENDIX_API_BASE + '</td></tr>';
     }
   }
 
@@ -1110,27 +1122,54 @@
   function renderTable(leads) {
     var tbody = document.getElementById('leadsTableBody');
     if (!leads.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="ti ti-inbox"></i>Aucun lead trouvé</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="ti ti-inbox"></i>Aucun lead trouvé</td></tr>';
       return;
     }
     tbody.innerHTML = leads.map(function(l) {
       var pauseIcon = l.ia_paused ? 'ti-player-play' : 'ti-player-pause';
       var pauseClass = l.ia_paused ? 'icon-btn paused' : 'icon-btn';
       return '<tr>' +
-        '<td><div class="lead-name">' + (l.name || 'Inconnu') + '</div><div class="lead-sub">' + (l.email || l.company || l.session_id || '') + '</div></td>' +
+        '<td><div class="lead-name">' + (l.name || 'Inconnu') + '</div><div class="lead-sub">' + (l.email || l.company || l.session_id || '') + (l.contact_preference ? ' · pref. ' + l.contact_preference : '') + '</div></td>' +
         '<td><button class="channel-icon-btn" title="Ouvrir la conversation" onclick=\'goToConversation(' + JSON.stringify(l).replace(/'/g,"&#39;") + ')\'>' + channelIcon(l.channel) + '</button></td>' +
         '<td>' + statusBadge(l.status) + '</td>' +
         '<td>' + scoreBar(l.score) + '</td>' +
         '<td>' + (l.budget || '—') + '</td>' +
         '<td>' + timeAgo(l.updated_at || l.created_at) + '</td>' +
+        '<td>' + handlingCell(l) + '</td>' +
         '<td><div class="action-btns">' +
           '<button class="icon-btn" title="Répondre" onclick=\'openReply(' + JSON.stringify(l).replace(/'/g,"&#39;") + ')\'><i class="ti ti-message-2"></i></button>' +
+          '<button class="icon-btn" title="Planifier RDV" onclick=\'openRdvModal(' + JSON.stringify(l).replace(/'/g,"&#39;") + ')\'><i class="ti ti-calendar-event"></i></button>' +
           '<button class="icon-btn" title="Résumé IA" onclick="openSummary(\'' + l.session_id + '\')"><i class="ti ti-sparkles"></i></button>' +
           '<button class="' + pauseClass + '" title="Pause IA" onclick="togglePause(\'' + l.id + '\', this)"><i class="ti ' + pauseIcon + '"></i></button>' +
           '<button class="icon-btn" title="' + (currentLeadsView === 'archived' ? 'Désarchiver' : 'Archiver') + '" onclick="toggleArchive(\'' + l.id + '\', \'' + currentLeadsView + '\')"><i class="ti ti-archive"></i></button>' +
         '</div></td>' +
       '</tr>';
     }).join('');
+  }
+
+  function handlingCell(l) {
+    var status = l.handling_status || 'a_traiter';
+    var opts = [
+      ['a_traiter', 'À traiter'],
+      ['en_cours', 'En cours'],
+      ['traite', 'Traité']
+    ].map(function(o) {
+      return '<option value="' + o[0] + '"' + (status === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+    }).join('');
+    return '<div style="display:flex;flex-direction:column;gap:4px;min-width:120px;">' +
+      '<select class="filter-select" style="font-size:11.5px;padding:5px 8px;" onchange="updateHandling(\'' + l.id + '\', { status: this.value })">' + opts + '</select>' +
+      '<input placeholder="Assigné à…" value="' + (l.assigned_to || '').replace(/"/g, '&quot;') + '" style="font-size:11.5px;padding:5px 8px;border:1px solid #e5e7eb;border-radius:8px;" onblur="updateHandling(\'' + l.id + '\', { assignedTo: this.value })">' +
+    '</div>';
+  }
+
+  async function updateHandling(id, patch) {
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/lead/' + id + '/handling', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch)
+      });
+      var data = await res.json();
+      if (!data.success) console.error('Erreur mise a jour suivi:', data.error);
+    } catch(err) { console.error('Erreur mise a jour suivi:', err.message); }
   }
 
   async function togglePause(id, btnEl) {
@@ -1183,6 +1222,76 @@
   }
 
   function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  var activeLeadForRdv = null;
+
+  function defaultRdvDateTime() {
+    // Propose demain a 10h par defaut, ajustable par l'agence
+    var d = new Date();
+    d.setDate(d.getDate() + 1);
+    var dateStr = d.toISOString().slice(0, 10);
+    return { date: dateStr, time: '10:00' };
+  }
+
+  function openRdvModal(lead) {
+    activeLeadForRdv = lead;
+    document.getElementById('rdvLeadName').textContent = (lead.name || 'Inconnu') + ' — ' + (lead.channel || 'whatsapp').toUpperCase();
+    var def = defaultRdvDateTime();
+    document.getElementById('rdvDate').value = def.date;
+    document.getElementById('rdvTime').value = def.time;
+    document.getElementById('rdvDuration').value = 30;
+    document.getElementById('rdvLocation').value = '';
+    document.getElementById('rdvNotes').value = '';
+    document.getElementById('rdvModal').classList.add('open');
+  }
+
+  function openRdvModalFromConv() {
+    if (!currentConvLead) return;
+    openRdvModal(currentConvLead);
+  }
+
+  async function confirmRdv() {
+    if (!activeLeadForRdv) return;
+    var date = document.getElementById('rdvDate').value;
+    var time = document.getElementById('rdvTime').value;
+    var duration = document.getElementById('rdvDuration').value || 30;
+    var location = document.getElementById('rdvLocation').value;
+    var notes = document.getElementById('rdvNotes').value;
+
+    if (!date || !time) { alert('Merci de renseigner une date et une heure.'); return; }
+
+    try {
+      var res = await fetch(ZENDIX_API_BASE + '/api/lead/' + activeLeadForRdv.id + '/rdv', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: date, time: time, durationMinutes: parseInt(duration, 10),
+          title: 'RDV — ' + (activeLeadForRdv.name || 'Prospect'),
+          location: location, notes: notes
+        })
+      });
+      if (!res.ok) {
+        var errData = await res.json().catch(function(){ return {}; });
+        alert('Erreur: ' + (errData.error || 'impossible de générer le RDV'));
+        return;
+      }
+      var blob = await res.blob();
+      var url = window.URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'rdv-' + (activeLeadForRdv.name || 'prospect').replace(/[^a-z0-9]/gi, '-') + '.ics';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      closeModal('rdvModal');
+      alert('RDV planifié — le fichier .ics a été téléchargé, vous pouvez l\'ouvrir avec n\'importe quel calendrier ou le joindre à un email.');
+      loadLeads();
+      if (currentConvLead && currentConvLead.id === activeLeadForRdv.id) openConversation(convLeadsCache.findIndex(function(l){ return l.id === activeLeadForRdv.id; }));
+    } catch(err) {
+      alert('Erreur envoi RDV: ' + err.message);
+    }
+  }
 
   var convLeadsCache = [];
   var currentConvLead = null;
