@@ -40,8 +40,11 @@ const supabase = createClient(SUPABASE_URL || '', SUPABASE_KEY || '');
 var mailTransporter = null;
 if (GMAIL_USER && GMAIL_PASS) {
   mailTransporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: GMAIL_USER, pass: GMAIL_PASS }
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: { user: GMAIL_USER, pass: GMAIL_PASS },
+    family: 4 // force IPv4 : evite "ENETUNREACH" sur les hebergeurs (ex. Render) sans route sortante IPv6 vers Gmail
   });
   console.log('Email notifications activees:', GMAIL_USER);
 }
@@ -66,7 +69,7 @@ async function sendHotLeadEmail(toEmail, lead, agencyName) {
             <tr><td style="padding:8px 0;color:#64748b;">Budget</td><td style="color:#10b981;font-weight:bold;">${lead.budget || '—'}</td></tr>
             <tr><td style="padding:8px 0;color:#64748b;">Score</td><td style="color:#fca5a5;font-weight:bold;">${lead.score || 0}/10</td></tr>
             <tr><td style="padding:8px 0;color:#64748b;">Pipeline</td><td style="color:#e2e8f0;">${lead.pipeline_stage || '—'}</td></tr>
-            <tr><td style="padding:8px 0;color:#64748b;">Telephone</td><td style="color:#e2e8f0;">${lead.phone || lead.session_id || '—'}</td></tr>
+            <tr><td style="padding:8px 0;color:#64748b;">Telephone</td><td style="color:#e2e8f0;">${lead.phone || '—'}</td></tr>
           </table>
           <div style="margin-top:24px;padding:16px;background:#0d1220;border-radius:8px;border-left:3px solid #10b981;">
             <p style="color:#6ee7b7;margin:0;font-size:0.85rem;">✅ Ce prospect est prêt à être closé. Contactez-le maintenant.</p>
@@ -965,6 +968,10 @@ async function processIncomingText(params) {
       session.notifSent = true;
       await sendHotLeadEmail(agencyConfig.notification_email, savedLead, agencyConfig.agency_name);
       console.log('Email envoye pour lead:', from, '[' + channel + ']');
+    } else if (session.leadScore >= 7 && !session.notifSent) {
+      console.log('Email hot lead NON declenche pour', from, '— score:', session.leadScore,
+        '| agencyConfig trouve:', !!agencyConfig,
+        '| notification_email configure:', !!(agencyConfig && agencyConfig.notification_email));
     }
   }
 
@@ -1136,6 +1143,10 @@ async function processWebMessage(sessionId, clientId, message, mediaUrl, mediaTy
     if (!session.notifSent && agencyConfig && agencyConfig.notification_email && session.leadScore >= 7) {
       session.notifSent = true;
       await sendHotLeadEmail(agencyConfig.notification_email, savedLead, agencyConfig.agency_name);
+    } else if (session.leadScore >= 7 && !session.notifSent) {
+      console.log('Email hot lead NON declenche pour', sessionId, '— score:', session.leadScore,
+        '| agencyConfig trouve:', !!agencyConfig,
+        '| notification_email configure:', !!(agencyConfig && agencyConfig.notification_email));
     }
   }
 
