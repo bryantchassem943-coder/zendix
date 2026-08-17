@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZENDIX PRO | Panel Configuration Agence</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #04050d;
+    --surface: #080c18;
+    --surface2: #0d1220;
+    --border: rgba(255,255,255,0.06);
+    --border2: rgba(255,255,255,0.15);
+    --blue: #3b82f6;
+    --cyan: #06b6d4;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --text2: #64748b;
+    --text3: #334155;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; opacity: 0.15; }
+  .orb-1 { width: 600px; height: 600px; background: #1d4ed8; top: -200px; left: -200px; }
+  .orb-2 { width: 400px; height: 400px; background: #065f46; bottom: -100px; right: -100px; }
+  .app { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+
+  /* NAV */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px; margin-bottom: 40px;
+    background: rgba(8,12,24,0.9); backdrop-filter: blur(20px);
+    border: 1px solid var(--border); border-radius: 16px;
+  }
+  .logo { font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; }
+  .logo .accent { color: var(--blue); }
+  .logo .tagline { display: block; font-size: 0.6rem; color: #94a3b8; letter-spacing: 3px; text-transform: uppercase; margin-top: 2px; }
+  .nav-links { display: flex; gap: 12px; }
+  .nav-link {
+    padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text2); font-family: var(--font-mono);
+    font-size: 0.7rem; cursor: pointer; transition: all 0.2s; text-decoration: none;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .nav-link:hover { color: var(--text); border-color: var(--border2); }
+  .nav-link.active { color: var(--blue); border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.08); }
+
+  /* PAGE HEADER */
+  .page-header { margin-bottom: 32px; }
+  .page-title { font-family: var(--font-display); font-weight: 800; font-size: 2rem; margin-bottom: 8px; }
+  .page-sub { font-size: 0.75rem; color: var(--text2); }
+
+  /* SECTIONS */
+  .section { margin-bottom: 24px; }
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 16px 20px; border-radius: 12px 12px 0 0;
+    background: var(--surface2); border: 1px solid var(--border); border-bottom: none;
+  }
+  .section-icon { font-size: 1.1rem; }
+  .section-title { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; }
+  .section-body {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 0 0 12px 12px; padding: 20px;
+  }
+
+  /* FORM ELEMENTS */
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  .field-label {
+    display: block; font-size: 0.65rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text2); margin-bottom: 8px;
+  }
+  .field-input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px;
+    font-family: var(--font-mono); font-size: 0.8rem; color: var(--text);
+    outline: none; transition: border-color 0.2s;
+  }
+  .field-input:focus { border-color: rgba(59,130,246,0.4); }
+  .field-input::placeholder { color: var(--text3); }
+  textarea.field-input { resize: vertical; min-height: 100px; line-height: 1.6; }
+
+  /* TONE SELECTOR */
+  .tone-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .tone-option {
+    padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg); cursor: pointer; transition: all 0.2s;
+    text-align: center; font-size: 0.7rem; color: var(--text2);
+  }
+  .tone-option:hover { border-color: var(--border2); color: var(--text); }
+  .tone-option.selected { border-color: rgba(59,130,246,0.4); background: rgba(59,130,246,0.08); color: var(--blue); }
+  .tone-emoji { display: block; font-size: 1.2rem; margin-bottom: 4px; }
+
+  /* SERVICES */
+  .services-list { display: flex; flex-direction: column; gap: 8px; }
+  .service-item {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px;
+  }
+  .service-name { flex: 1; font-size: 0.8rem; color: var(--text); }
+  .service-price { font-size: 0.75rem; color: var(--green); font-weight: 600; min-width: 100px; text-align: right; }
+  .service-delete {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid rgba(239,68,68,0.2);
+    background: rgba(239,68,68,0.08); color: var(--red); cursor: pointer;
+    font-size: 0.8rem; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .service-delete:hover { background: rgba(239,68,68,0.15); }
+  .add-service-row { display: flex; gap: 8px; margin-top: 8px; }
+  .add-service-row .field-input { margin: 0; }
+  .add-btn {
+    padding: 10px 16px; border-radius: 10px; border: 1px solid rgba(59,130,246,0.3);
+    background: rgba(59,130,246,0.1); color: var(--blue); cursor: pointer;
+    font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .add-btn:hover { background: rgba(59,130,246,0.2); }
+
+  /* PREVIEW */
+  .preview-box {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; font-size: 0.75rem;
+    line-height: 1.8; color: var(--text2); min-height: 120px;
+    white-space: pre-wrap;
+  }
+  .preview-box .highlight { color: var(--cyan); }
+
+  /* SAVE BUTTON */
+  .save-section { display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px; }
+  .btn-secondary {
+    padding: 12px 24px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text2); cursor: pointer;
+    font-family: var(--font-mono); font-size: 0.8rem; transition: all 0.2s;
+  }
+  .btn-secondary:hover { color: var(--text); border-color: var(--border2); }
+  .btn-primary {
+    padding: 12px 28px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
+    color: #fff; cursor: pointer; font-family: var(--font-display);
+    font-size: 0.85rem; font-weight: 700; transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(30,64,175,0.4);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(30,64,175,0.5); }
+
+  /* TOAST */
+  .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    padding: 10px 16px; border-radius: 10px; font-size: 0.75rem;
+    display: flex; align-items: center; gap: 8px;
+    animation: toastIn 0.25s ease;
+  }
+  .toast-ok { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; }
+  @keyframes toastIn { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
+
+  /* STATUS */
+  .status-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-radius: 8px; margin-bottom: 16px;
+    background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2);
+    font-size: 0.7rem; color: #6ee7b7;
+  }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="app">
+
+  <nav>
+    <div class="logo">
+      ZENDIX<span class="accent"> PRO</span>
+      <span class="tagline">AI Automation Agency</span>
+    </div>
+    <div class="nav-links">
+      <a href="/" class="nav-link">💬 Chat</a>
+      <a href="/panel.html" class="nav-link active">⚙️ Config</a>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div class="page-title">Configuration <span style="color:var(--blue)">Agence</span></div>
+    <div class="page-sub">Personnalisez le comportement de votre agent IA pour vos clients</div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot"></div>
+    Configuration active — L'agent IA utilisera ces paramètres pour toutes les conversations
+  </div>
+
+  <!-- IDENTITE -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🏢</span>
+      <span class="section-title">Identité de l'agence</span>
+    </div>
+    <div class="section-body">
+      <div class="field">
+        <label class="field-label">Nom de l'agence</label>
+        <input type="text" class="field-input" id="agencyName" placeholder="Ex: ZENDIX Marketing Agency">
+      </div>
+      <div class="field">
+        <label class="field-label">Description courte</label>
+        <input type="text" class="field-input" id="agencyDesc" placeholder="Ex: Agence spécialisée en Growth Hacking et Meta Ads">
+      </div>
+      <div class="field">
+        <label class="field-label">Présentation complète (l'IA utilisera ce texte pour se présenter)</label>
+        <textarea class="field-input" id="agencyPresentation" placeholder="Ex: Nous sommes une agence digitale fondée en 2020, spécialisée dans l'acquisition client et la croissance des PME. Nous avons aidé plus de 50 entreprises à doubler leur chiffre d'affaires..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- TON -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">💬</span>
+      <span class="section-title">Ton de communication</span>
+    </div>
+    <div class="section-body">
+      <div class="field">
+        <label class="field-label">Style de l'agent IA</label>
+        <div class="tone-grid" id="toneGrid">
+          <div class="tone-option selected" data-tone="professionnel">
+            <span class="tone-emoji">👔</span>
+            Professionnel
+          </div>
+          <div class="tone-option" data-tone="amical">
+            <span class="tone-emoji">😊</span>
+            Amical
+          </div>
+          <div class="tone-option" data-tone="dynamique">
+            <span class="tone-emoji">⚡</span>
+            Dynamique
+          </div>
+          <div class="tone-option" data-tone="luxe">
+            <span class="tone-emoji">💎</span>
+            Luxe / Premium
+          </div>
+          <div class="tone-option" data-tone="jeune">
+            <span class="tone-emoji">🔥</span>
+            Jeune / Moderne
+          </div>
+          <div class="tone-option" data-tone="expert">
+            <span class="tone-emoji">🎯</span>
+            Expert / Technique
+          </div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:16px">
+        <label class="field-label">Instructions spéciales pour l'agent</label>
+        <textarea class="field-input" id="specialInstructions" placeholder="Ex: Toujours proposer une consultation gratuite de 30 min. Ne jamais mentionner les tarifs avant d'avoir qualifié le prospect. Utiliser des emojis dans les réponses WhatsApp..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- SERVICES -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">📦</span>
+      <span class="section-title">Services & Tarifs</span>
+    </div>
+    <div class="section-body">
+      <div class="services-list" id="servicesList"></div>
+      <div class="add-service-row">
+        <input type="text" class="field-input" id="newServiceName" placeholder="Nom du service (ex: Meta Ads)">
+        <input type="text" class="field-input" id="newServicePrice" placeholder="Tarif (ex: 150 000 FCFA/mois)" style="max-width:200px">
+        <button class="add-btn" onclick="addService()">+ Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">👁️</span>
+      <span class="section-title">Aperçu du prompt IA</span>
+    </div>
+    <div class="section-body">
+      <div class="field-label" style="margin-bottom:10px">Ce prompt sera injecté dans chaque conversation client</div>
+      <div class="preview-box" id="previewBox">Remplissez les champs ci-dessus pour voir le prompt généré...</div>
+    </div>
+  </div>
+
+  <div class="save-section">
+    <button class="btn-secondary" onclick="resetConfig()">Réinitialiser</button>
+    <button class="btn-primary" onclick="saveConfig()">💾 Sauvegarder la configuration</button>
+  </div>
+
+</div>
+<div class="toast-container" id="toastBox"></div>
+
+<script>
+var selectedTone = 'professionnel';
+var services = [];
+
+var toneDescriptions = {
+  professionnel: 'sérieux, structuré et professionnel',
+  amical: 'chaleureux, accessible et bienveillant',
+  dynamique: 'énergique, direct et orienté résultats',
+  luxe: 'élégant, raffiné et exclusif',
+  jeune: 'moderne, décontracté avec des emojis',
+  expert: 'technique, précis et analytique'
+};
+
+// Tone selector
+document.getElementById('toneGrid').addEventListener('click', function(e) {
+  var option = e.target.closest('.tone-option');
+  if (!option) return;
+  document.querySelectorAll('.tone-option').forEach(function(o) { o.classList.remove('selected'); });
+  option.classList.add('selected');
+  selectedTone = option.dataset.tone;
+  updatePreview();
+});
+
+// Live preview
+['agencyName','agencyDesc','agencyPresentation','specialInstructions'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('input', updatePreview);
+});
+
+function updatePreview() {
+  var name         = document.getElementById('agencyName').value || '[Nom agence]';
+  var desc         = document.getElementById('agencyDesc').value || '[Description]';
+  var presentation = document.getElementById('agencyPresentation').value || '[Présentation]';
+  var instructions = document.getElementById('specialInstructions').value || '';
+  var tone         = toneDescriptions[selectedTone] || selectedTone;
+
+  var servicesText = services.length > 0
+    ? services.map(function(s) { return '- ' + s.name + ': ' + s.price; }).join('\n')
+    : '[Aucun service configuré]';
+
+  var prompt = 'Tu es l\'agent IA de ' + name + ', ' + desc + '.\n\n';
+  prompt += 'PRESENTATION:\n' + presentation + '\n\n';
+  prompt += 'TON: Sois ' + tone + '.\n\n';
+  prompt += 'SERVICES:\n' + servicesText + '\n\n';
+  if (instructions) prompt += 'INSTRUCTIONS: ' + instructions + '\n\n';
+  prompt += 'MISSION: Qualifier le prospect (nom, email, budget, objectif) et scorer son interet 1-10.';
+
+  document.getElementById('previewBox').textContent = prompt;
+}
+
+function addService() {
+  var name  = document.getElementById('newServiceName').value.trim();
+  var price = document.getElementById('newServicePrice').value.trim();
+  if (!name) return;
+  services.push({ name: name, price: price || 'Sur devis' });
+  document.getElementById('newServiceName').value = '';
+  document.getElementById('newServicePrice').value = '';
+  renderServices();
+  updatePreview();
+}
+
+function renderServices() {
+  var list = document.getElementById('servicesList');
+  if (services.length === 0) {
+    list.innerHTML = '<div style="font-size:0.75rem;color:var(--text3);padding:8px 0">Aucun service ajouté</div>';
+    return;
+  }
+  list.innerHTML = services.map(function(s, i) {
+    return '<div class="service-item">' +
+      '<span class="service-name">' + s.name + '</span>' +
+      '<span class="service-price">' + s.price + '</span>' +
+      '<button class="service-delete" onclick="deleteService(' + i + ')">✕</button>' +
+      '</div>';
+  }).join('');
+}
+
+function deleteService(i) {
+  services.splice(i, 1);
+  renderServices();
+  updatePreview();
+}
+
+function saveConfig() {
+  var config = {
+    agencyName:        document.getElementById('agencyName').value,
+    agencyDesc:        document.getElementById('agencyDesc').value,
+    agencyPresentation:document.getElementById('agencyPresentation').value,
+    tone:              selectedTone,
+    specialInstructions: document.getElementById('specialInstructions').value,
+    services:          services,
+    prompt:            document.getElementById('previewBox').textContent,
+    savedAt:           new Date().toISOString()
+  };
+
+  fetch('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config)
+  })
+  .then(function(r) { return r.json(); })
+  .then(function() {
+    showToast('Configuration sauvegardée avec succès !');
+  })
+  .catch(function() {
+    showToast('Configuration sauvegardée localement !');
+  });
+
+  localStorage.setItem('zendix_config', JSON.stringify(config));
+}
+
+function resetConfig() {
+  if (!confirm('Réinitialiser toute la configuration ?')) return;
+  document.getElementById('agencyName').value = '';
+  document.getElementById('agencyDesc').value = '';
+  document.getElementById('agencyPresentation').value = '';
+  document.getElementById('specialInstructions').value = '';
+  services = [];
+  renderServices();
+  updatePreview();
+}
+
+function loadSavedConfig() {
+  var saved = localStorage.getItem('zendix_config');
+  if (!saved) return;
+  try {
+    var config = JSON.parse(saved);
+    document.getElementById('agencyName').value          = config.agencyName || '';
+    document.getElementById('agencyDesc').value          = config.agencyDesc || '';
+    document.getElementById('agencyPresentation').value  = config.agencyPresentation || '';
+    document.getElementById('specialInstructions').value = config.specialInstructions || '';
+    services = config.services || [];
+    if (config.tone) {
+      selectedTone = config.tone;
+      document.querySelectorAll('.tone-option').forEach(function(o) {
+        o.classList.toggle('selected', o.dataset.tone === selectedTone);
+      });
+    }
+    renderServices();
+    updatePreview();
+  } catch(e) {}
+}
+
+function showToast(msg) {
+  var box = document.getElementById('toastBox');
+  var div = document.createElement('div');
+  div.className = 'toast toast-ok';
+  div.textContent = '✅ ' + msg;
+  box.appendChild(div);
+  setTimeout(function() { div.remove(); }, 3000);
+}
+
+// Init
+renderServices();
+loadSavedConfig();
+updatePreview();
+</script>
+</body>
+</html>
