@@ -432,7 +432,7 @@ function getSessionCache(key) {
 
 function groqRequest(messages) {
   return new Promise(function(resolve, reject) {
-    var body = JSON.stringify({ model:'llama-3.1-8b-instant', messages:messages, temperature:0.8, max_tokens:1024 });
+    var body = JSON.stringify({ model:'openai/gpt-oss-20b', messages:messages, temperature:0.8, max_tokens:1024 });
     var options = {
       hostname: 'api.groq.com',
       path: '/openai/v1/chat/completions',
