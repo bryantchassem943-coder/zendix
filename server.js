@@ -1706,14 +1706,19 @@ app.get('/api/stats', async function(req, res) {
       messenger: leads.filter(function(l){ return l.channel === 'messenger'; }).length,
     };
 
-    var visitsR = await supabase.from('site_visits').select('id', { count: 'exact', head: true }).eq('client_id', clientId);
+   var visitsR = await supabase.from('site_visits').select('id', { count: 'exact', head: true }).eq('client_id', clientId);
     var siteVisits = visitsR.count || 0;
+
+    // Messages traités = tous les messages entrants (prospect) + sortants (IA) pour ce client
+    var msgsR = await supabase.from('chat_history').select('id', { count: 'exact', head: true }).eq('client_id', clientId);
+    var messagesTraites = msgsR.count || 0;
 
     var conversionRate = total ? (((hot + closing) / total) * 100).toFixed(1) : 0;
 
     res.json({
       total: total, hot: hot, warm: warm, new: newCount, closing: closing, demoScheduled: demoScheduled,
-      avgScore: avgScore, byChannel: byChannel, siteVisits: siteVisits, conversionRate: conversionRate
+      avgScore: avgScore, byChannel: byChannel, siteVisits: siteVisits, messagesTraites: messagesTraites,
+      conversionRate: conversionRate
     });
   } catch(err) { res.json({}); }
 });

@@ -317,7 +317,7 @@
 
     <div class="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-top"><div class="kpi-label" data-i18n="kpi.traffic">Trafic</div><div class="kpi-icon icon-blue"><i class="ti ti-eye"></i></div></div>
+        <div class="kpi-top"><div class="kpi-label" data-i18n="messages traités">Messagestraités</div><div class="kpi-icon icon-blue"><i class="ti ti-eye"></i></div></div>
         <div class="kpi-value" id="kpiMessages">—</div>
       </div>
       <div class="kpi-card">
@@ -808,7 +808,7 @@
       'sub.rdv': 'Gestion des rendez-vous — manuel ou automatique', 'sub.conversations': 'Historique complet par lead',
       'sub.analytics': 'Performance détaillée par canal', 'sub.settings': "Réglages généraux de l'agent",
       'sub.account': 'Informations de votre agence',
-      'kpi.traffic': 'Trafic', 'kpi.qualifiedLeads': 'Leads qualifiés', 'kpi.rdvTaken': 'RDV pris',
+     'kpi.traffic': 'Messages traités', 'kpi.qualifiedLeads': 'Leads qualifiés', 'kpi.rdvTaken': 'RDV pris',
       'kpi.conversionRate': 'Taux de conversion', 'kpi.avgScore': 'Score moyen', 'kpi.totalLeads': 'Total leads',
       'kpi.conversionRate2': 'Taux conversion',
       'btn.refresh': 'Actualiser',
@@ -1232,7 +1232,7 @@
       var s = await res.json();
       if (!s || typeof s.total === 'undefined') return;
 
-      document.getElementById('kpiMessages').textContent = (s.siteVisits || 0).toLocaleString('fr-FR');
+      document.getElementById('kpiMessages').textContent = (s.messagesTraites || 0).toLocaleString('fr-FR');
       document.getElementById('kpiLeads').textContent = (s.total || 0).toLocaleString('fr-FR');
       document.getElementById('kpiRdv').textContent = (s.demoScheduled || 0).toLocaleString('fr-FR');
       document.getElementById('kpiConv').textContent = (s.conversionRate || 0) + '%';
