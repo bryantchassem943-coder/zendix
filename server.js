@@ -268,6 +268,62 @@ function minutesToTimeStr(m) {
   return (h < 10 ? '0' : '') + h + ':' + (mn < 10 ? '0' : '') + mn;
 }
 
+// ─── MATCHING CRENEAUX <-> PREFERENCE EXPRIMEE PAR LE PROSPECT ────────────────
+// Le prospect dit "mardi apres-midi" / "vendredi vers 14h" / "le matin" -> on extrait
+// un jour/moment/heure approximatifs, puis on trie les creneaux reellement disponibles
+// par proximite avec cette preference, au lieu de renvoyer betement les 4 premiers de la semaine.
+var JOUR_KEYWORDS = { 'lundi':1,'mardi':2,'mercredi':3,'jeudi':4,'vendredi':5,'samedi':6,'dimanche':7 };
+var PERIOD_RANGES = { 'matin': [0, 12*60], 'apres-midi': [12*60, 18*60], 'soir': [17*60, 24*60] };
+
+function parsePreferredMoment(text) {
+  if (!text) return null;
+  var t = text.toLowerCase();
+  var result = { day: null, period: null, explicitMinutes: null };
+
+  Object.keys(JOUR_KEYWORDS).forEach(function(name) {
+    if (t.indexOf(name) !== -1) result.day = JOUR_KEYWORDS[name];
+  });
+  if (/matin/.test(t)) result.period = 'matin';
+  else if (/(apres|après)[ -]?midi/.test(t)) result.period = 'apres-midi';
+  else if (/soir/.test(t)) result.period = 'soir';
+
+  var timeMatch = /(\d{1,2})\s*[h:]\s*(\d{2})?/.exec(t);
+  if (timeMatch) {
+    var h = parseInt(timeMatch[1], 10);
+    var m = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+    if (h >= 0 && h <= 23) result.explicitMinutes = h * 60 + m;
+  }
+
+  if (!result.day && !result.period && result.explicitMinutes === null) return null;
+  return result;
+}
+
+function scoreSlotAgainstPreference(slot, pref) {
+  var score = 0;
+  var slotDate = new Date(slot.date + 'T00:00:00');
+  var isoDay = slotDate.getDay() === 0 ? 7 : slotDate.getDay();
+  var slotMinutes = timeStrToMinutes(slot.time);
+
+  if (pref.day && isoDay === pref.day) score += 100;
+  if (pref.period && PERIOD_RANGES[pref.period]) {
+    var range = PERIOD_RANGES[pref.period];
+    if (slotMinutes >= range[0] && slotMinutes < range[1]) score += 50;
+  }
+  if (pref.explicitMinutes !== null) {
+    var diff = Math.abs(slotMinutes - pref.explicitMinutes);
+    score += Math.max(0, 40 - diff / 5);
+  }
+  return score;
+}
+
+function rankSlotsByPreference(slots, prefText, topN) {
+  var pref = parsePreferredMoment(prefText);
+  if (!pref) return slots.slice(0, topN || 4);
+  var scored = slots.map(function(s) { return { slot: s, score: scoreSlotAgainstPreference(s, pref) }; });
+  scored.sort(function(a, b) { return b.score - a.score; });
+  return scored.slice(0, topN || 4).map(function(x) { return x.slot; });
+}
+
 async function computeAvailableSlots(clientId, agencyConfig, count) {
   count = count || 6;
   var days = ((agencyConfig && agencyConfig.rdv_days) || '1,2,3,4,5').split(',');
@@ -341,7 +397,7 @@ async function tryAutoConfirmRdv(session, leadInfo, availableSlots, agencyConfig
   }
 }
 
-function buildSystemPrompt(config, availableSlots) {
+function buildSystemPrompt(config, availableSlots, hasPreference) {
   var base = '';
   if (config && config.agency_name) {
     base += 'Tu es ' + (config.agent_name || 'l\'agent IA') + ' de ' + config.agency_name;
@@ -370,10 +426,12 @@ function buildSystemPrompt(config, availableSlots) {
   }
   base += 'Reponds TOUJOURS dans la meme langue que celle utilisee par le prospect dans son dernier message (francais, anglais, ou toute autre langue) — ne force jamais le francais si le prospect ecrit dans une autre langue. Collecte naturellement le nom, email, entreprise, budget et objectif du prospect. ';
   base += 'Des que le prospect confirme un interet reel (envie de visiter, d\'etre recontacte, de prendre RDV), demande-lui EXPLICITEMENT par quel moyen il prefere etre recontacte (telephone, email ou WhatsApp). ';
-  if (availableSlots && availableSlots.length > 0) {
-    base += 'Pour le rendez-vous, propose-lui UNIQUEMENT deux ou trois creneaux parmi cette liste reelle de disponibilites (ne jamais inventer un autre creneau) : ';
+  if (availableSlots && availableSlots.length > 0 && hasPreference) {
+    base += 'Le prospect a deja indique une preference de jour/moment pour le rendez-vous. Propose-lui UNIQUEMENT deux ou trois creneaux parmi cette liste, choisis car ils sont les plus proches de sa preference (ne jamais inventer un autre creneau) : ';
     base += availableSlots.slice(0, 4).map(function(s) { return s.label; }).join(', ') + '. ';
-    base += 'Si le prospect CONFIRME EXPLICITEMENT un de ces creneaux precis (ex: "oui vendredi 9h ca marche", "va pour ce creneau"), reecris ce creneau EXACTEMENT comme il apparait dans la liste ci-dessus dans le champ creneau_confirme du bloc DATA. Si le prospect hesite, demande juste une preference, ou n\'a pas encore choisi precisement, laisse creneau_confirme a null. ';
+    base += 'Si le prospect CONFIRME EXPLICITEMENT un de ces creneaux precis (ex: "oui vendredi 9h ca marche", "va pour ce creneau"), reecris ce creneau EXACTEMENT comme il apparait dans la liste ci-dessus dans le champ creneau_confirme du bloc DATA. Si le prospect hesite, laisse creneau_confirme a null. ';
+  } else if (availableSlots && availableSlots.length > 0) {
+    base += 'AVANT de proposer un creneau, demande D\'ABORD au prospect quel jour ou moment de la semaine lui conviendrait le mieux (ex: "quel jour vous arrangerait le mieux pour la consultation ?"). Ne propose PAS encore de creneau precis tant qu\'il n\'a pas donne cette preference. Une fois qu\'il l\'a donnee, elle sera automatiquement enregistree et des creneaux adaptes lui seront proposes au tour suivant. ';
   } else {
     base += 'Demande-lui quel jour/heure lui conviendrait pour un rendez-vous (ex: "mardi matin", "cette semaine apres 17h"). Ne confirme jamais toi-meme un rendez-vous precis : indique que "un conseiller confirmera ce creneau rapidement". ';
   }
@@ -1072,8 +1130,10 @@ async function processIncomingText(params) {
   var session = getSessionCache(from + '_' + clientId);
   session.turns++;
 
-  var availableSlots = await computeAvailableSlots(clientId, agencyConfig);
-  var groqMessages = [{ role:'system', content: buildSystemPrompt(agencyConfig, availableSlots) }];
+  var hasPreference = !!session.leadInfo.creneau_souhaite;
+  var rawSlots = await computeAvailableSlots(clientId, agencyConfig, hasPreference ? 40 : 6);
+  var availableSlots = hasPreference ? rankSlotsByPreference(rawSlots, session.leadInfo.creneau_souhaite, 4) : rawSlots;
+  var groqMessages = [{ role:'system', content: buildSystemPrompt(agencyConfig, availableSlots, hasPreference) }];
   groqMessages = groqMessages.concat(toGroqMessages(history));
   groqMessages.push({ role:'user', content: text });
 
@@ -1261,8 +1321,10 @@ async function processWebMessage(sessionId, clientId, message, mediaUrl, mediaTy
 
   var agencyConfig = await getAgencyConfig(clientId);
   var history      = await loadHistory(sessionId, clientId);
-  var availableSlots = await computeAvailableSlots(clientId, agencyConfig);
-  var messages     = [{ role:'system', content: buildSystemPrompt(agencyConfig, availableSlots) }];
+  var hasPreference = !!session.leadInfo.creneau_souhaite;
+  var rawSlots = await computeAvailableSlots(clientId, agencyConfig, hasPreference ? 40 : 6);
+  var availableSlots = hasPreference ? rankSlotsByPreference(rawSlots, session.leadInfo.creneau_souhaite, 4) : rawSlots;
+  var messages     = [{ role:'system', content: buildSystemPrompt(agencyConfig, availableSlots, hasPreference) }];
   messages = messages.concat(toGroqMessages(history));
   messages.push({ role:'user', content: message });
 
@@ -1706,7 +1768,7 @@ app.get('/api/stats', async function(req, res) {
       messenger: leads.filter(function(l){ return l.channel === 'messenger'; }).length,
     };
 
-   var visitsR = await supabase.from('site_visits').select('id', { count: 'exact', head: true }).eq('client_id', clientId);
+    var visitsR = await supabase.from('site_visits').select('id', { count: 'exact', head: true }).eq('client_id', clientId);
     var siteVisits = visitsR.count || 0;
 
     // Messages traités = tous les messages entrants (prospect) + sortants (IA) pour ce client
@@ -1860,12 +1922,13 @@ app.get('/api/health', function(req, res) {
 
 app.listen(PORT, function() {
   console.log('='.repeat(52));
-  console.log('RELAY v6.3 — port', PORT);
+  console.log('RELAY v6.4 — port', PORT);
   console.log('Multi-tenant: ON | Supabase memory: ON');
   console.log('Multi-canal: WhatsApp + Messenger + Instagram');
   console.log('Stockage media permanent: ON (bucket ' + MEDIA_BUCKET + ')');
   console.log('Email notifications:', mailTransporter ? 'ON (' + GMAIL_USER + ')' : 'OFF');
   console.log('ElevenLabs voice: ON (WhatsApp only, >' + VOICE_WORD_LIMIT + ' mots)');
   console.log('RDV .ics: ON (zero dependance Google/Outlook)');
+  console.log('Matching creneaux <-> preference prospect: ON');
   console.log('='.repeat(52));
 });
